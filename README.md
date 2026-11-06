@@ -57,6 +57,8 @@ It holds no login: saving happens on your site, under your normal sign-in.
 
 ## Good to know
 
+- **The tutorial** is offered once to each person after they sign in, and **Tutorial** in the home
+  sidebar replays it. It runs on a practice board that is never saved.
 - **Secret links** let someone view a folder's boards and comment, with no account. Open a folder and
   click **Share**. Anyone with the link gets the same access, and comment names aren't verified. Turning
   a link off stops it right away, and turning it back on makes a new one. Comments marked **Team only**

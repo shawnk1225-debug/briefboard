@@ -303,7 +303,7 @@ export function HomePage() {
     <div className="home">
       <header className="home-head">
         <h1 className="brand">Briefboard</h1>
-        <div className="home-actions">
+        <div className="home-actions" data-tour="account">
           <button className="btn" onClick={openSearch}>
             <SearchIcon /> Search
           </button>

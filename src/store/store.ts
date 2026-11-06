@@ -51,6 +51,8 @@ interface State {
   // Viewing through a secret link: nothing on the canvas can change.
   readOnly: boolean
   shareToken: string | null
+  // In the tutorial: edits work on screen, but nothing is ever saved or sent anywhere.
+  practice: boolean
 }
 
 export const useStore = create<State>(() => ({
@@ -75,6 +77,7 @@ export const useStore = create<State>(() => ({
   commentsOpen: false,
   readOnly: false,
   shareToken: null,
+  practice: false,
 }))
 
 const get = useStore.getState
@@ -102,9 +105,10 @@ function pushHistory(changes: Change[]) {
 }
 
 // Single path for every card change: updates the screen, queues the save, records undo.
-export function applyEdits(edits: Edit[], { history = true, sync = true }: { history?: boolean; sync?: boolean } = {}) {
+export function applyEdits(edits: Edit[], { history = true, sync: wantSync = true }: { history?: boolean; sync?: boolean } = {}) {
   const s = get()
   if (s.readOnly) return
+  const sync = wantSync && !s.practice
   const cards = { ...s.cards }
   const selected = { ...s.selected }
   const changes: Change[] = []
@@ -151,9 +155,10 @@ export function applyEdits(edits: Edit[], { history = true, sync = true }: { his
 }
 
 // Closes out a live interaction (drag, resize, typing) as one undo step.
-export function commitInteraction(before: Card[], { sync = true }: { sync?: boolean } = {}) {
-  const { cards, readOnly } = get()
+export function commitInteraction(before: Card[], { sync: wantSync = true }: { sync?: boolean } = {}) {
+  const { cards, readOnly, practice } = get()
   if (readOnly) return
+  const sync = wantSync && !practice
   const changes: Change[] = []
   for (const old of before) {
     const current = cards[old.id]
@@ -346,8 +351,49 @@ export async function createBoard(fields: Partial<Board> = {}): Promise<Board> {
     ...fields,
   }
   set((s) => ({ boards: { ...s.boards, [board.id]: board } }))
-  await backend.insertBoard(board)
+  if (!get().practice) await backend.insertBoard(board)
   return board
+}
+
+// The tutorial's board: real cards on screen, with no board behind them in storage.
+export function enterPracticeBoard(boardId: string, cards: Card[]) {
+  set({
+    practice: true,
+    boardId,
+    boardLoading: false,
+    cards: Object.fromEntries(cards.map((c) => [c.id, c])),
+    comments: {},
+    selected: {},
+    editingId: null,
+    tool: 'select',
+    past: [],
+    future: [],
+    commentsOpen: false,
+    commentCardId: null,
+    detached: {},
+    dragIds: {},
+    dropTarget: null,
+    viewport: { x: 120, y: 90, zoom: 1 },
+  })
+}
+
+export function exitPracticeBoard() {
+  set({
+    practice: false,
+    boardId: null,
+    cards: {},
+    comments: {},
+    selected: {},
+    editingId: null,
+    tool: 'select',
+    past: [],
+    future: [],
+    commentsOpen: false,
+    commentCardId: null,
+    detached: {},
+    dragIds: {},
+    dropTarget: null,
+  })
 }
 
 // Where opening a nested board goes, which differs when viewing through a link.
@@ -383,6 +429,7 @@ export async function addSharedComment(cardId: string | null, name: string, body
 export function updateBoard(id: string, fields: Partial<Board>) {
   if (get().readOnly) return
   set((s) => (s.boards[id] ? { boards: { ...s.boards, [id]: { ...s.boards[id], ...fields } } } : s))
+  if (get().practice) return
   void backend.updateBoard(id, fields).catch((err) => console.error('Board save failed', err))
 }
 
@@ -400,8 +447,8 @@ export async function deleteBoardForever(id: string) {
 const viewportKey = (boardId: string) => `briefboard:viewport:${boardId}`
 
 export function saveViewport() {
-  const { boardId, viewport } = get()
-  if (!boardId) return
+  const { boardId, viewport, practice } = get()
+  if (!boardId || practice) return
   try {
     localStorage.setItem(viewportKey(boardId), JSON.stringify(viewport))
   } catch {
@@ -444,17 +491,20 @@ export async function openBoard(boardId: string) {
 }
 
 export async function addComment(cardId: string | null, body: string, internal = false) {
-  const comment = await backend.addComment({ id: crypto.randomUUID(), boardId: get().boardId!, cardId, body, internal })
+  const fields = { id: crypto.randomUUID(), boardId: get().boardId!, cardId, body, internal }
+  const comment: Comment = get().practice
+    ? { ...fields, authorEmail: 'You', authorName: null, resolved: false, createdAt: new Date().toISOString() }
+    : await backend.addComment(fields)
   set((s) => ({ comments: { ...s.comments, [comment.id]: comment } }))
 }
 
 export async function setCommentResolved(id: string, resolved: boolean) {
-  await backend.setCommentResolved(id, resolved)
+  if (!get().practice) await backend.setCommentResolved(id, resolved)
   set((s) => (s.comments[id] ? { comments: { ...s.comments, [id]: { ...s.comments[id], resolved } } } : s))
 }
 
 export async function deleteComment(id: string) {
-  await backend.deleteComment(id)
+  if (!get().practice) await backend.deleteComment(id)
   set((s) => {
     const comments = { ...s.comments }
     delete comments[id]
@@ -476,8 +526,9 @@ export function closeBoard() {
 
 // Picks up anything missed while the tab was asleep or offline.
 export async function refreshOpenBoard() {
-  const { boardId } = get()
-  if (!boardId || !queue.idle || Object.keys(get().dragIds).length) return
+  const { boardId, practice } = get()
+  // A practice board has nothing stored, so a refresh would wipe it.
+  if (practice || !boardId || !queue.idle || Object.keys(get().dragIds).length) return
   const fresh = await backend.listCards(boardId)
   const s = get()
   if (s.boardId !== boardId || !queue.idle || Object.keys(s.dragIds).length) return

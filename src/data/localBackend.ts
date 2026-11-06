@@ -1,5 +1,6 @@
 import { createStore, del, get, set, update } from 'idb-keyval'
-import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
+import { readTutorialState, writeTutorialState } from '../lib/tutorialMemory'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -320,6 +321,14 @@ export class LocalBackend implements Backend {
 
   async currentUser() {
     return 'You'
+  }
+
+  async loadTutorialState(): Promise<TutorialState> {
+    return readTutorialState('local')
+  }
+
+  async saveTutorialState(state: TutorialState) {
+    writeTutorialState('local', state)
   }
 
   async search(query: string): Promise<SearchHit[]> {

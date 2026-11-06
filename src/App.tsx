@@ -7,6 +7,9 @@ import { AuthGate } from './pages/AuthGate'
 import { HomePage } from './pages/HomePage'
 import { SharePage } from './pages/SharePage'
 import { loadBoards, queue, refreshOpenBoard, startSync, stopSync, useStore } from './store/store'
+import { PracticeBoard } from './tutorial/PracticeBoard'
+import { ActiveTutorial, TutorialHomeUi } from './tutorial/Tutorial'
+import { loadTutorialStatus, useTutorial } from './tutorial/tutorialStore'
 import { Feedback } from './ui/feedback'
 import { SearchDialog } from './ui/SearchDialog'
 
@@ -14,8 +17,11 @@ function Main() {
   const hash = useHash()
   const { boardId, cardId } = parseRoute(hash)
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading')
+  const practice = useStore((s) => s.practice)
+  const tutorialActive = useTutorial((s) => s.active)
 
   useEffect(() => {
+    void loadTutorialStatus()
     loadBoards()
       .then(() => setState('ready'))
       .catch((err) => {
@@ -54,10 +60,21 @@ function Main() {
     )
   }
   if (hash === '#/clip') return <ClipPage />
+  // During the tutorial's practice steps the real pages aren't mounted at all.
+  if (practice) {
+    return (
+      <>
+        <PracticeBoard />
+        <ActiveTutorial />
+      </>
+    )
+  }
   return (
     <>
       {boardId ? <BoardPage key={boardId} boardId={boardId} focusCardId={cardId} /> : <HomePage />}
-      <SearchDialog />
+      {!boardId && <TutorialHomeUi />}
+      <ActiveTutorial />
+      {!tutorialActive && <SearchDialog />}
     </>
   )
 }

@@ -128,8 +128,10 @@ function ToolButton({ type, label, icon }: { type: CardType; label: string; icon
   )
 }
 
-function Toolbar() {
+export function Toolbar() {
   const tool = useStore((s) => s.tool)
+  // Nested boards and uploads need real storage, so the practice board leaves them out.
+  const practice = useStore((s) => s.practice)
   const fileInput = useRef<HTMLInputElement>(null)
   const attachInput = useRef<HTMLInputElement>(null)
   const onFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,17 +141,21 @@ function Toolbar() {
   }
   return (
     <nav className="toolbar" aria-label="Add to board">
-      {TOOLS.map((t) => (
+      {TOOLS.filter((t) => !practice || t.type !== 'board').map((t) => (
         <ToolButton key={t.type} {...t} />
       ))}
-      <button className="tool" title="Image: pick a file, or drop or paste one onto the board" onClick={() => fileInput.current?.click()}>
-        <ImageIcon />
-        <span>Image</span>
-      </button>
-      <button className="tool" title="File: attach a PDF, doc or video, up to 50 MB" onClick={() => attachInput.current?.click()}>
-        <FileIcon />
-        <span>File</span>
-      </button>
+      {!practice && (
+        <>
+          <button className="tool" title="Image: pick a file, or drop or paste one onto the board" onClick={() => fileInput.current?.click()}>
+            <ImageIcon />
+            <span>Image</span>
+          </button>
+          <button className="tool" title="File: attach a PDF, doc or video, up to 50 MB" onClick={() => attachInput.current?.click()}>
+            <FileIcon />
+            <span>File</span>
+          </button>
+        </>
+      )}
       <button
         className={`tool${tool === 'arrow' ? ' active' : ''}`}
         title="Arrow: drag between two cards"
@@ -165,7 +171,7 @@ function Toolbar() {
   )
 }
 
-function SelectionBar() {
+export function SelectionBar() {
   const selected = useStore((s) => s.selected)
   const cards = useStore((s) => s.cards)
   const editing = useStore((s) => s.editingId)

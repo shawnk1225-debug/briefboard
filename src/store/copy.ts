@@ -54,6 +54,8 @@ export async function cloneCards(source: Card[], boardId: string, parentForBoard
 }
 
 export async function copyBoardTree(sourceId: string, fields: Partial<Board> = {}): Promise<Board | null> {
+  // Pasting a copied real board onto the practice board must not create a real board.
+  if (useStore.getState().practice) return null
   await queue.drain()
   const source = useStore.getState().boards[sourceId]
   if (!source) return null

@@ -146,6 +146,9 @@ export interface Comment {
   createdAt: string
 }
 
+// new: hasn't been asked. bubble: said no, and the hint is showing. done: nothing more to show.
+export type TutorialState = 'new' | 'bubble' | 'done'
+
 export interface SearchHit {
   card: Card
   boardTitle: string

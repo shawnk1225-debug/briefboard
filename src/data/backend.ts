@@ -1,4 +1,4 @@
-import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
 import { LocalBackend } from './localBackend'
 import { SupabaseBackend, supabaseConfigured } from './supabaseBackend'
 
@@ -35,6 +35,9 @@ export interface Backend {
   setCommentResolved(id: string, resolved: boolean): Promise<void>
   deleteComment(id: string): Promise<void>
   currentUser(): Promise<string>
+  // Whether this person has been offered the tutorial, remembered per login.
+  loadTutorialState(): Promise<TutorialState>
+  saveTutorialState(state: TutorialState): Promise<void>
 }
 
 export const backend: Backend = supabaseConfigured ? new SupabaseBackend() : new LocalBackend()

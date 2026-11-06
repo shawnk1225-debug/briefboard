@@ -3,6 +3,7 @@ import { boardCount, childFolders, moveTargets, type HomeView } from '../lib/boa
 import { createFolder, deleteFolder, updateFolder, useStore } from '../store/store'
 import type { Board, Folder } from '../types'
 import { askConfirm, askInput, showToast } from '../ui/feedback'
+import { startTutorial } from '../tutorial/tutorialStore'
 import { useHomePrefs } from './homePrefs'
 
 const failToast = (action: Promise<unknown>, message: string) =>
@@ -154,7 +155,7 @@ export function HomeSidebar({ boards, trashCount }: { boards: Board[]; trashCoun
     )
 
   return (
-    <nav className="home-side" aria-label="Folders">
+    <nav className="home-side" aria-label="Folders" data-tour="folders">
       <ul>
         {item({ kind: 'all' }, 'All boards', boardCount(boards, folders, { kind: 'all' }))}
         {item({ kind: 'unfiled' }, 'Unfiled', boardCount(boards, folders, { kind: 'unfiled' }))}
@@ -176,6 +177,14 @@ export function HomeSidebar({ boards, trashCount }: { boards: Board[]; trashCoun
       <ul>
         {item({ kind: 'templates' }, 'Templates')}
         {item({ kind: 'trash' }, 'Trash', trashCount)}
+        <li>
+          <div className="side-row" data-tour="tutorial">
+            <span className="side-chevron" aria-hidden="true" />
+            <button className="side-name" onClick={startTutorial}>
+              <span>Tutorial</span>
+            </button>
+          </div>
+        </li>
       </ul>
     </nav>
   )

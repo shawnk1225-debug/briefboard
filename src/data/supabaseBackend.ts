@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
+import { furthestTutorialState, readTutorialState, writeTutorialState } from '../lib/tutorialMemory'
+import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -11,6 +12,7 @@ export const supabase: SupabaseClient | null = supabaseConfigured ? createClient
 
 const IMAGE_BUCKET = 'board-images'
 const FILE_BUCKET = 'board-files'
+const TUTORIAL_FIELD = 'briefboard_tutorial'
 const SIGNED_URL_SECONDS = 60 * 60 * 24
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -367,6 +369,24 @@ export class SupabaseBackend implements Backend {
   async currentUser() {
     const { data } = await this.db.auth.getUser()
     return data.user?.email?.toLowerCase() ?? ''
+  }
+
+  // Kept on the login so it follows the person across devices. The browser keeps a copy,
+  // so a failed save can't lead to the same person being asked again and again.
+  async loadTutorialState(): Promise<TutorialState> {
+    const { data, error } = await this.db.auth.getUser()
+    if (error) throw error
+    const who = data.user.email?.toLowerCase() ?? data.user.id
+    const onLogin = data.user.user_metadata?.[TUTORIAL_FIELD]
+    const fromLogin: TutorialState = onLogin === 'bubble' || onLogin === 'done' ? onLogin : 'new'
+    return furthestTutorialState(fromLogin, readTutorialState(who))
+  }
+
+  async saveTutorialState(state: TutorialState) {
+    const { data } = await this.db.auth.getUser()
+    if (data.user) writeTutorialState(data.user.email?.toLowerCase() ?? data.user.id, state)
+    const { error } = await this.db.auth.updateUser({ data: { [TUTORIAL_FIELD]: state } })
+    if (error) throw error
   }
 
   async search(query: string): Promise<SearchHit[]> {

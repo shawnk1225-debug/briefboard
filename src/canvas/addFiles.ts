@@ -1,6 +1,6 @@
 import { backend } from '../data/backend'
 import { prepareImage } from '../lib/images'
-import { addCard } from '../store/store'
+import { addCard, useStore } from '../store/store'
 import { showToast } from '../ui/feedback'
 
 // The per-file limit on Supabase's free plan, also set on the storage bucket.
@@ -24,6 +24,10 @@ async function addAttachment(file: File, x: number, y: number) {
 // Images become image cards. Everything else, including image formats the browser
 // can't process, becomes a file card.
 export async function addFiles(files: File[], x: number, y: number) {
+  if (useStore.getState().practice) {
+    showToast("Images and files can't be added to the practice board.")
+    return
+  }
   let offset = 0
   for (const file of files) {
     const at = { x: x + offset, y: y + offset }

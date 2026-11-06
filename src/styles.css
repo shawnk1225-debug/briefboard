@@ -449,6 +449,30 @@ label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap:
 .read-only .viewport input::placeholder, .read-only .viewport textarea::placeholder { color: transparent; }
 .read-only .note-text { user-select: text; -webkit-user-select: text; }
 
+/* Tutorial */
+.tour-block { position: fixed; inset: 0; z-index: 1200; }
+.tour-dim { position: fixed; inset: 0; z-index: 1200; background: rgb(29 31 36 / 0.45); pointer-events: none; }
+.tour-ring { position: fixed; z-index: 1201; border: 2px solid var(--accent); border-radius: 10px; pointer-events: none; }
+.tour-ring.dim { box-shadow: 0 0 0 9999px rgb(29 31 36 / 0.45); }
+.tour-bubble { position: fixed; z-index: 1202; background: var(--paper); border-radius: 12px; box-shadow: var(--shadow-2); padding: 15px 17px; display: flex; flex-direction: column; gap: 7px; max-height: calc(100vh - 24px); overflow-y: auto; }
+.tour-progress { font-size: 12px; font-weight: 600; color: var(--accent); }
+.tour-bubble h2 { font-size: 16.5px; font-weight: 650; }
+.tour-bubble p { font-size: 14px; color: var(--ink-soft); }
+.tour-bubble p.tour-done { color: #1f7a45; font-weight: 600; }
+.tour-actions { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 5px; }
+.tour-actions > div { display: flex; gap: 7px; }
+.tour-share { border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; display: flex; flex-direction: column; gap: 5px; }
+.tour-share-link { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; background: var(--canvas); border-radius: 5px; padding: 5px 8px; }
+.tour-share-link em { font-style: normal; font-weight: 600; color: var(--ink-faint); }
+.tour-share p { font-size: 12.5px; }
+.tour-prompt h2 { font-size: 18px; }
+.tour-hint { position: fixed; z-index: 50; display: flex; align-items: center; gap: 10px; padding: 9px 12px; width: max-content; max-width: calc(100vw - 24px); background: var(--ink); color: #fff; border-radius: 10px; box-shadow: var(--shadow-2); font-size: 13.5px; }
+.tour-hint::before { content: ''; position: absolute; left: -6px; top: 50%; width: 12px; height: 12px; background: var(--ink); transform: translateY(-50%) rotate(45deg); }
+.tour-hint.docked { justify-content: space-between; }
+.tour-hint.docked::before { display: none; }
+.tour-hint .btn { padding: 4px 10px; font-size: 13px; flex: none; }
+.practice .floating-bar { z-index: 40; }
+
 /* Web clipper */
 .clip-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .clip-card .btn { justify-content: center; }

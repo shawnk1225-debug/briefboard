@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { addFiles } from '../canvas/addFiles'
 import { Canvas } from '../canvas/Canvas'
 import { centerOn, fitToContent, screenToWorld, viewportCenter, zoomCentered, getViewportEl } from '../canvas/geometry'
@@ -346,6 +346,12 @@ export function BoardPage({ boardId, focusCardId }: { boardId: string; focusCard
     })
     return () => closeBoard()
   }, [boardId])
+
+  // Every board opens showing everything on it. Runs once the cards are on the page, because it
+  // measures them, but before the browser draws, so the board never flashes at the wrong zoom.
+  useLayoutEffect(() => {
+    if (!loading && Object.keys(useStore.getState().cards).length) fitToContent()
+  }, [loading])
 
   // Runs after the cards have rendered, because it measures them.
   useEffect(() => {

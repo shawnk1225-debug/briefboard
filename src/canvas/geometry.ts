@@ -81,12 +81,14 @@ export function ordersBetween(prev: number | undefined, next: number | undefined
 }
 
 export const MIN_ZOOM = 0.15
+// Fitting a very large board can go further out than manual zooming, so nothing gets cut off.
+const FIT_MIN_ZOOM = 0.02
 export const MAX_ZOOM = 3
 
 export function zoomAt(clientX: number, clientY: number, nextZoom: number) {
   const { viewport } = useStore.getState()
   const rect = viewportEl!.getBoundingClientRect()
-  const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom))
+  const zoom = Math.min(MAX_ZOOM, Math.max(Math.min(MIN_ZOOM, viewport.zoom), nextZoom))
   const px = clientX - rect.left
   const py = clientY - rect.top
   useStore.setState({
@@ -112,24 +114,39 @@ export function topLevelRects(): Rect[] {
   })
 }
 
+// Everything on the board, including arrow ends that aren't attached to a card.
+export function contentRects(): Rect[] {
+  const rects = topLevelRects()
+  for (const card of Object.values(useStore.getState().cards)) {
+    if (card.type !== 'arrow') continue
+    for (const end of [card.content.from, card.content.to]) {
+      if (end && !end.cardId && end.x !== undefined && end.y !== undefined) rects.push({ x: end.x, y: end.y, w: 1, h: 1 })
+    }
+  }
+  return rects
+}
+
+// The view that shows all of `bounds`, clear of the floating tools. It never enlarges past 100%.
+export function fitViewport(bounds: Rect, width: number, height: number): { x: number; y: number; zoom: number } {
+  const narrow = width <= 640
+  const pad = narrow ? { left: 16, right: 16, top: 16, bottom: 130 } : { left: 84, right: 40, top: 76, bottom: 60 }
+  const zoom = Math.max(
+    FIT_MIN_ZOOM,
+    Math.min(1, (width - pad.left - pad.right) / bounds.w, (height - pad.top - pad.bottom) / bounds.h),
+  )
+  return {
+    zoom,
+    x: pad.left + (width - pad.left - pad.right) / 2 - (bounds.x + bounds.w / 2) * zoom,
+    y: pad.top + (height - pad.top - pad.bottom) / 2 - (bounds.y + bounds.h / 2) * zoom,
+  }
+}
+
 export function fitToContent() {
-  const bounds = boundsOf(topLevelRects())
+  const bounds = boundsOf(contentRects())
   const el = viewportEl
   if (!el) return
   const { width, height } = el.getBoundingClientRect()
-  if (!bounds) {
-    useStore.setState({ viewport: { x: 120, y: 90, zoom: 1 } })
-    return
-  }
-  const pad = 80
-  const zoom = Math.min(1, Math.max(MIN_ZOOM, Math.min((width - pad * 2) / bounds.w, (height - pad * 2) / bounds.h)))
-  useStore.setState({
-    viewport: {
-      zoom,
-      x: width / 2 - (bounds.x + bounds.w / 2) * zoom,
-      y: height / 2 - (bounds.y + bounds.h / 2) * zoom,
-    },
-  })
+  useStore.setState({ viewport: bounds ? fitViewport(bounds, width, height) : { x: 120, y: 90, zoom: 1 } })
 }
 
 export function centerOn(id: string) {

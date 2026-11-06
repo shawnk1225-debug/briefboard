@@ -446,29 +446,7 @@ export async function deleteBoardForever(id: string) {
   await loadBoards()
 }
 
-const viewportKey = (boardId: string) => `briefboard:viewport:${boardId}`
-
-export function saveViewport() {
-  const { boardId, viewport, practice } = get()
-  if (!boardId || practice) return
-  try {
-    localStorage.setItem(viewportKey(boardId), JSON.stringify(viewport))
-  } catch {
-    // Remembering the scroll position is only a convenience.
-  }
-}
-
-function savedViewport(boardId: string): Viewport | null {
-  try {
-    const raw = localStorage.getItem(viewportKey(boardId))
-    return raw ? (JSON.parse(raw) as Viewport) : null
-  } catch {
-    return null
-  }
-}
-
 export async function openBoard(boardId: string) {
-  saveViewport()
   set({
     boardId,
     boardLoading: true,
@@ -480,7 +458,8 @@ export async function openBoard(boardId: string) {
     future: [],
     comments: {},
     commentCardId: null,
-    viewport: savedViewport(boardId) ?? { x: 120, y: 90, zoom: 1 },
+    // Boards with cards are then fitted to them. An empty board stays at this full size.
+    viewport: { x: 120, y: 90, zoom: 1 },
   })
   await queue.drain()
   const [cards, comments] = await Promise.all([backend.listCards(boardId), backend.listComments(boardId)])
@@ -515,7 +494,6 @@ export async function deleteComment(id: string) {
 }
 
 export function closeBoard() {
-  saveViewport()
   set({ boardId: null, cards: {}, selected: {}, editingId: null, past: [], future: [], comments: {}, commentCardId: null })
   // A link visitor has no access to the team's board list.
   if (get().readOnly) return

@@ -1,4 +1,4 @@
-import { boundsOf, getViewportEl, topLevelRects, type Rect } from '../canvas/geometry'
+import { boundsOf, contentRects, getViewportEl } from '../canvas/geometry'
 import { backend } from '../data/backend'
 import { selectOnly, setEditing, useStore } from '../store/store'
 import type { Card } from '../types'
@@ -17,24 +17,12 @@ function download(href: string, filename: string) {
 const fileName = (title: string, extension: string) =>
   `${title.trim().replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '') || 'board'}.${extension}`
 
-function contentBounds(): Rect | null {
-  const { cards } = useStore.getState()
-  const rects = topLevelRects()
-  for (const card of Object.values(cards)) {
-    if (card.type !== 'arrow') continue
-    for (const end of [card.content.from, card.content.to]) {
-      if (end && !end.cardId && end.x !== undefined && end.y !== undefined) rects.push({ x: end.x, y: end.y, w: 1, h: 1 })
-    }
-  }
-  return boundsOf(rects)
-}
-
 async function renderImage(format: 'png' | 'jpeg'): Promise<{ dataUrl: string; width: number; height: number } | null> {
   selectOnly([])
   setEditing(null)
   // Lets selection outlines clear first. A timer, because animation frames stop in background tabs.
   await new Promise((resolve) => setTimeout(resolve, 50))
-  const bounds = contentBounds()
+  const bounds = boundsOf(contentRects())
   const world = getViewportEl()?.querySelector<HTMLElement>('.world')
   if (!bounds || !world) return null
 

@@ -5,5 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: './',
   plugins: [react()],
-  test: { environment: 'node', include: ['tests/**/*.test.ts'] },
+  // Starting a real database for the access-rule tests can be slow on a busy machine.
+  test: { environment: 'node', include: ['tests/**/*.test.ts'], hookTimeout: 60000 },
 })

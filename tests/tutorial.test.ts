@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { backend } from '../src/data/backend'
 import { furthestTutorialState } from '../src/lib/tutorialMemory'
-import { useHomePrefs } from '../src/pages/homePrefs'
+import { readSavedPrefs, useHomePrefs } from '../src/pages/homePrefs'
 import { expandForCopy, pasteCards } from '../src/store/copy'
 import {
   addCard,
@@ -57,6 +57,25 @@ afterEach(() => {
   useTutorial.setState({ status: null, active: false, step: 0 })
   memory.clear()
   vi.restoreAllMocks()
+})
+
+describe('home page layout preference', () => {
+  it('opens in Grid for new people', () => {
+    expect(readSavedPrefs(null).layout).toBe('grid')
+  })
+
+  it('moves everyone from the old automatic List setting to Grid, once', () => {
+    expect(readSavedPrefs(JSON.stringify({ layout: 'list', sort: 'name' }))).toMatchObject({ layout: 'grid', sort: 'name' })
+  })
+
+  it('keeps what someone chooses after that, either way', () => {
+    expect(readSavedPrefs(JSON.stringify({ layout: 'grid', chosenLayout: 'list' })).layout).toBe('list')
+    expect(readSavedPrefs(JSON.stringify({ chosenLayout: 'grid' })).layout).toBe('grid')
+  })
+
+  it('survives a damaged saved value', () => {
+    expect(readSavedPrefs('{not json').layout).toBe('grid')
+  })
 })
 
 describe('the first-time question', () => {
@@ -140,6 +159,36 @@ describe('the tutorial steps', () => {
     expect(stepDone('addedHook', base, [note, hook], 1)).toBe(true)
     expect(stepDone('addedComment', base, [note], 2)).toBe(true)
     expect(stepDone(undefined, base, [note, hook], 9)).toBe(false)
+  })
+})
+
+describe('the Getting started checklist', () => {
+  it('gives every step a distinct short name', () => {
+    const labels = STEPS.map((s) => s.label)
+    expect(new Set(labels).size).toBe(7)
+    for (const label of labels) expect(label.length).toBeLessThanOrEqual(24)
+  })
+
+  it('ticks a step when moving past it, not when going back or jumping to it', () => {
+    startTutorial()
+    expect(tutorial().ticked).toEqual({})
+    goToStep(1)
+    expect(tutorial().ticked).toEqual({ 0: true })
+    goToStep(2)
+    goToStep(1)
+    expect(tutorial().ticked).toEqual({ 0: true, 1: true })
+    goToStep(5)
+    expect(tutorial().ticked).toEqual({ 0: true, 1: true })
+    goToStep(2)
+    expect(tutorial().ticked).toEqual({ 0: true, 1: true })
+  })
+
+  it('starts fresh on a replay', () => {
+    startTutorial()
+    goToStep(3)
+    exitTutorial()
+    startTutorial()
+    expect(tutorial().ticked).toEqual({})
   })
 })
 

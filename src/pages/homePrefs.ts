@@ -10,12 +10,27 @@ interface HomePrefs extends BoardFilters {
 }
 
 const KEY = 'briefboard:home'
-const DEFAULTS: HomePrefs = { view: { kind: 'all' }, layout: 'list', collapsed: {}, shareFolderId: null, hideTemplates: false, query: '', status: 'any', format: 'any', sort: 'edited' }
+const DEFAULTS: HomePrefs = { view: { kind: 'all' }, layout: 'grid', collapsed: {}, shareFolderId: null, hideTemplates: false, query: '', status: 'any', format: 'any', sort: 'edited' }
+
+// Saved separately from the old `layout` value, which every browser stored automatically when
+// List was the default. Ignoring it moves everyone to Grid once, then their own choice sticks.
+interface SavedPrefs extends Partial<Omit<HomePrefs, 'layout'>> {
+  layout?: unknown
+  chosenLayout?: HomePrefs['layout']
+}
+
+export function readSavedPrefs(raw: string | null): HomePrefs {
+  try {
+    const { layout: _oldLayout, chosenLayout, ...saved } = JSON.parse(raw ?? '{}') as SavedPrefs
+    return { ...DEFAULTS, ...saved, layout: chosenLayout ?? DEFAULTS.layout, shareFolderId: null, query: '' }
+  } catch {
+    return DEFAULTS
+  }
+}
 
 function load(): HomePrefs {
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) ?? '{}') as Partial<HomePrefs>
-    return { ...DEFAULTS, ...saved, query: '' }
+    return readSavedPrefs(localStorage.getItem(KEY))
   } catch {
     return DEFAULTS
   }
@@ -26,7 +41,7 @@ export const useHomePrefs = create<HomePrefs>(load)
 
 useHomePrefs.subscribe(({ view, layout, collapsed, status, format, sort, hideTemplates }) => {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ view, layout, collapsed, status, format, sort, hideTemplates }))
+    localStorage.setItem(KEY, JSON.stringify({ view, chosenLayout: layout, collapsed, status, format, sort, hideTemplates }))
   } catch {
     // Remembering these is only a convenience.
   }

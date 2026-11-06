@@ -4,6 +4,8 @@ import type { Card } from '../types'
 export type StepCheck = 'addedNote' | 'addedHook' | 'addedComment'
 
 export interface TutorialStep {
+  // Its short name in the Getting started checklist.
+  label: string
   title: string
   body: string
   stage: 'home' | 'practice'
@@ -19,6 +21,7 @@ export const PRACTICE_NOTE = 'This practice board is never saved, so try anythin
 export function buildSteps(hasAccounts: boolean): TutorialStep[] {
   return [
     {
+      label: 'Find your folders',
       title: 'Folders keep boards organized',
       body: 'Each product gets a folder, with batches inside it. Click a folder to see only its boards.',
       stage: 'home',
@@ -26,17 +29,20 @@ export function buildSteps(hasAccounts: boolean): TutorialStep[] {
       place: 'right',
     },
     {
+      label: 'Start from a template',
       title: 'Start from a template',
-      body: `On the home page, click New board and pick Video or Static. This practice board is a Video ad brief: the plan on the left, the ad's structure on the right. ${PRACTICE_NOTE}`,
+      body: `On the home page, pick Video or Static under Start a new board. This practice board is a Video ad brief: the plan on the left, the ad's structure on the right. ${PRACTICE_NOTE}`,
       stage: 'practice',
     },
     {
+      label: 'Add a note',
       title: 'Add a note',
       body: 'Double-click an empty spot and type something. Then click away and drag your note around.',
       stage: 'practice',
       check: 'addedNote',
     },
     {
+      label: 'Add a hook',
       title: 'Add another hook',
       body: 'Click the title of Hook 1, then click Duplicate in the bar at the bottom. The new hook joins the row with its arrow already connected.',
       stage: 'practice',
@@ -44,6 +50,7 @@ export function buildSteps(hasAccounts: boolean): TutorialStep[] {
       check: 'addedHook',
     },
     {
+      label: 'Leave a comment',
       title: 'Leave comments',
       body: 'Click Comments and post something. Select a card first to comment on it. Tick Team only to hide a comment from people with a link.',
       stage: 'practice',
@@ -51,12 +58,14 @@ export function buildSteps(hasAccounts: boolean): TutorialStep[] {
       check: 'addedComment',
     },
     {
+      label: 'Share with an editor',
       title: 'Send a batch to an editor',
       body: 'Open a folder on the home page, click Share, then Turn on link. Editors can view and comment without an account, and you can turn the link off at any time.',
       stage: 'practice',
       sharePreview: true,
     },
     {
+      label: 'Finish up',
       title: "You're ready",
       body: hasAccounts
         ? 'Search finds any board or card. If someone gave you a temporary password, open Team now and change it. To see this again, click Tutorial in the sidebar.'

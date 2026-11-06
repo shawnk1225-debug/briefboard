@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { previewShape, toPreviewCard } from '../lib/boardPreview'
+import { BUILTIN_TEMPLATES, buildTemplateCards } from '../lib/templates'
 import { useStore } from '../store/store'
+import { PreviewArt } from '../ui/BoardPreview'
 import { baselineOf, stepDone, type TutorialStep } from './steps'
 import { declineTutorial, dismissTutorialHint, exitTutorial, goToStep, startTutorial, STEPS, useTutorial } from './tutorialStore'
 
@@ -71,6 +74,30 @@ function SharePreview() {
   )
 }
 
+function Checklist({ current, onHome }: { current: number; onHome: boolean }) {
+  const ticked = useTutorial((s) => s.ticked)
+  const count = Object.keys(ticked).length
+  return (
+    <aside className={`tour-checklist${onHome ? ' on-home' : ''}`} aria-label="Getting started checklist">
+      <h2>Getting started</h2>
+      <div className="tour-meter" aria-hidden="true">
+        <span style={{ width: `${(count / STEPS.length) * 100}%` }} />
+      </div>
+      <ol>
+        {STEPS.map((step, i) => (
+          <li key={step.label} className={i === current ? 'current' : ''}>
+            <button aria-current={i === current ? 'step' : undefined} onClick={() => goToStep(i)}>
+              <span className={`tour-tick${ticked[i] ? ' done' : ''}`} aria-hidden="true">{ticked[i] ? '✓' : ''}</span>
+              {step.label}
+              {ticked[i] && <span className="sr-only"> (done)</span>}
+            </button>
+          </li>
+        ))}
+      </ol>
+    </aside>
+  )
+}
+
 function TutorialLayer() {
   const stepIndex = useTutorial((s) => s.step)
   const step = STEPS[stepIndex]
@@ -124,6 +151,7 @@ function TutorialLayer() {
         />
       )}
       {!rect && isHome && <div className="tour-dim" />}
+      <Checklist current={stepIndex} onHome={isHome} />
       <div
         ref={bubbleRef}
         className="tour-bubble"
@@ -132,6 +160,9 @@ function TutorialLayer() {
         style={bubbleStyle(rect, step.place, bubbleRef.current?.offsetHeight ?? 200)}
       >
         <div className="tour-progress">Step {stepIndex + 1} of {STEPS.length}</div>
+        <div className="tour-meter" aria-hidden="true">
+          <span style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
+        </div>
         <h2>{step.title}</h2>
         <p>{step.body}</p>
         {step.sharePreview && <SharePreview />}
@@ -154,11 +185,16 @@ function TutorialLayer() {
 function TutorialPrompt() {
   const yesRef = useRef<HTMLButtonElement>(null)
   useEffect(() => yesRef.current?.focus(), [])
+  const art = useMemo(() => {
+    const video = BUILTIN_TEMPLATES.find((t) => t.format === 'video')!
+    return previewShape(buildTemplateCards(video, 'welcome').map(toPreviewCard))
+  }, [])
   return (
     <div className="dialog-backdrop" onKeyDown={(e) => e.key === 'Escape' && declineTutorial()}>
       <div className="dialog tour-prompt" role="dialog" aria-modal="true" aria-label="Take the tutorial?">
+        <PreviewArt shape={art} />
         <h2>Welcome to Briefboard</h2>
-        <p>Want a 2-minute tour of the key things? You'll practise on a board that's never saved.</p>
+        <p>Write ad briefs on one big board, and send them to editors with a link. Want a 2-minute tour? You'll practise on a board that's never saved.</p>
         <div className="dialog-actions">
           <button className="btn" onClick={declineTutorial}>No thanks</button>
           <button ref={yesRef} className="btn primary" onClick={startTutorial}>Yes, show me</button>

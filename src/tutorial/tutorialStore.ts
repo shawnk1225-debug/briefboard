@@ -15,9 +15,11 @@ interface TutorialStore {
   status: TutorialState | null
   active: boolean
   step: number
+  // Steps ticked off in the checklist, reached by moving past them.
+  ticked: Record<number, true>
 }
 
-export const useTutorial = create<TutorialStore>(() => ({ status: null, active: false, step: 0 }))
+export const useTutorial = create<TutorialStore>(() => ({ status: null, active: false, step: 0, ticked: {} }))
 
 const set = useTutorial.setState
 
@@ -59,7 +61,7 @@ export function startTutorial() {
   viewBefore = prefs.view
   useHomePrefs.setState({ view: { kind: 'all' }, shareFolderId: null })
   syncStage(0)
-  set({ active: true, step: 0 })
+  set({ active: true, step: 0, ticked: {} })
 }
 
 export function goToStep(step: number) {
@@ -67,7 +69,8 @@ export function goToStep(step: number) {
   // Finishes any note being typed, so its formatting bar doesn't linger into the next step.
   useStore.setState({ editingId: null })
   syncStage(next)
-  set({ step: next })
+  const { step: current, ticked } = useTutorial.getState()
+  set({ step: next, ticked: next > current ? { ...ticked, [current]: true } : ticked })
 }
 
 export function exitTutorial() {

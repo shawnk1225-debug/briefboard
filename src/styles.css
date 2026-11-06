@@ -467,7 +467,23 @@ label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap:
 .tour-share-link { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; background: var(--canvas); border-radius: 5px; padding: 5px 8px; }
 .tour-share-link em { font-style: normal; font-weight: 600; color: var(--ink-faint); }
 .tour-share p { font-size: 12.5px; }
-.tour-prompt h2 { font-size: 18px; }
+.tour-prompt { width: min(480px, 100%); }
+.tour-prompt h2 { font-size: 21px; letter-spacing: -0.01em; }
+.tour-prompt p { color: var(--ink-soft); }
+.tour-prompt .board-preview { margin-bottom: 2px; }
+.tour-meter { height: 5px; border-radius: 3px; background: var(--column); overflow: hidden; }
+.tour-meter span { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.2s; }
+.tour-checklist { position: fixed; z-index: 1202; left: 12px; bottom: 12px; width: 220px; padding: 13px 12px 8px; background: var(--paper); border-radius: 16px; box-shadow: var(--shadow-2); display: flex; flex-direction: column; gap: 7px; }
+.tour-checklist.on-home { left: auto; right: 12px; }
+.tour-checklist h2 { font-size: 13.5px; font-weight: 650; padding: 0 3px; }
+.tour-checklist ol { list-style: none; margin: 0; padding: 0; }
+.tour-checklist button { width: 100%; display: flex; align-items: center; gap: 8px; border: 0; background: none; border-radius: 7px; padding: 4px 3px; font-size: 13px; text-align: left; color: var(--ink-soft); }
+.tour-checklist button:hover { background: var(--canvas); }
+.tour-checklist li.current button { color: var(--ink); font-weight: 600; background: var(--accent-soft); }
+.tour-tick { flex: none; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--line-strong); border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; }
+.tour-tick.done { background: #1f7a45; border-color: #1f7a45; }
+/* Where there's no room for it, the step's progress bar still shows how far along they are. */
+@media (max-width: 720px), (max-height: 780px) { .tour-checklist { display: none; } }
 .tour-hint { position: fixed; z-index: 50; display: flex; align-items: center; gap: 10px; padding: 9px 12px; width: max-content; max-width: calc(100vw - 24px); background: var(--ink); color: #fff; border-radius: 10px; box-shadow: var(--shadow-2); font-size: 13.5px; }
 .tour-hint::before { content: ''; position: absolute; left: -6px; top: 50%; width: 12px; height: 12px; background: var(--ink); transform: translateY(-50%) rotate(45deg); }
 .tour-hint.docked { justify-content: space-between; }
@@ -560,7 +576,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .home { padding: 16px 16px 48px; }
   .title-input { max-width: 150px; }
   .sync { display: none; }
-  .toolbar { flex-direction: row; left: 8px; right: 8px; top: auto; bottom: 56px; overflow-x: auto; overflow-y: hidden; }
+  .toolbar, .board-page.full .toolbar { flex-direction: row; left: 8px; right: 8px; top: auto; bottom: 56px; max-height: none; overflow-x: auto; overflow-y: hidden; }
   .tool { width: 52px; height: 48px; flex: none; }
   /* No hover on a phone, so the labels stay visible under the icons. */
   .tool span { position: static; transform: none; opacity: 1; padding: 0; background: none; color: var(--ink-soft); font-size: 11px; }

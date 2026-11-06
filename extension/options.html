@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Briefboard Clipper settings</title>
+    <style>
+      body { font: 15px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1d1f24; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+      h1 { font-size: 20px; margin: 0 0 6px; }
+      p { color: #5d626c; margin: 0 0 16px; }
+      label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+      input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c4c1b8; border-radius: 7px; font: inherit; }
+      button { margin-top: 10px; padding: 7px 14px; border: 0; border-radius: 7px; background: #c8441f; color: #fff; font: inherit; font-weight: 550; cursor: pointer; }
+      #status { margin-top: 10px; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <h1>Briefboard Clipper</h1>
+    <p>Enter the address of your Briefboard site. Clips open there, so the extension never holds your login.</p>
+    <form id="form">
+      <label for="site">Site address</label>
+      <input id="site" type="text" placeholder="https://yourname.github.io/briefboard/" required />
+      <button>Save</button>
+    </form>
+    <p id="status" role="status"></p>
+    <script src="options.js"></script>
+  </body>
+</html>

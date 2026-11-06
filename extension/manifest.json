@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Briefboard Clipper",
+  "version": "0.1.0",
+  "description": "Save pages, links, images and text to your Briefboard.",
+  "action": { "default_title": "Save this page to Briefboard" },
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "permissions": ["contextMenus", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"]
+}

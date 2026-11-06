@@ -1,23 +1,25 @@
 :root {
-  --ink: #1d1f24;
-  --ink-soft: #5d626c;
-  --ink-faint: #8c919b;
+  --ink: #1b1f2a;
+  --ink-soft: #596070;
+  --ink-faint: #7f8696;
   --paper: #ffffff;
-  --canvas: #f3f2ee;
-  --canvas-dot: #d4d1c8;
-  --line: #dfddd6;
-  --line-strong: #c4c1b8;
-  --accent: #c8441f;
+  --canvas: #f4f5f8;
+  --canvas-dot: #cfd3dc;
+  --line: #e4e6ec;
+  --line-strong: #cdd1da;
+  --accent: #d4431c;
+  --accent-strong: #b53716;
   --accent-ink: #ffffff;
-  --accent-soft: #fbe9e3;
+  --accent-soft: #fdeee9;
   --danger: #b3261e;
-  --shadow-1: 0 1px 2px rgb(29 31 36 / 0.1), 0 1px 1px rgb(29 31 36 / 0.05);
-  --shadow-2: 0 8px 24px rgb(29 31 36 / 0.16), 0 2px 6px rgb(29 31 36 / 0.08);
-  --c-yellow: #fff4c4;
-  --c-green: #dff2dc;
-  --c-blue: #dcebfa;
-  --c-pink: #fbe0e6;
-  --c-gray: #e9e8e3;
+  --column: #eceef3;
+  --shadow-1: 0 1px 3px rgb(27 31 42 / 0.08), 0 4px 12px rgb(27 31 42 / 0.05);
+  --shadow-2: 0 12px 32px rgb(27 31 42 / 0.16), 0 3px 8px rgb(27 31 42 / 0.08);
+  --c-yellow: #fff3b8;
+  --c-green: #d6f3d9;
+  --c-blue: #d9e9ff;
+  --c-pink: #ffdfe8;
+  --c-gray: #e8eaef;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.45;
@@ -45,7 +47,7 @@ h1, h2, h3, p { margin: 0; }
 .btn:hover { background: var(--canvas); }
 .btn svg { width: 16px; height: 16px; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.btn.primary:hover { background: #ad3817; }
+.btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
 .link-btn { background: none; border: 0; padding: 0; color: var(--ink-soft); text-decoration: underline; }
 .icon-btn {
@@ -121,7 +123,7 @@ label input { padding: 8px 10px; border: 1px solid var(--line-strong); border-ra
 .board-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
 .board-table th { text-align: left; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 5px 6px; border-bottom: 1px solid var(--line-strong); }
 .board-table td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-.board-table tbody tr:hover { background: #faf9f6; }
+.board-table tbody tr:hover { background: #f8f9fb; }
 .board-table tr.checked { background: var(--accent-soft) !important; }
 .col-check { width: 32px; }
 .col-pin { width: 32px; }
@@ -324,7 +326,7 @@ select.status-done { color: var(--ink-faint); }
 .board-title { text-align: center; font-weight: 600; font-size: 14px; width: 100%; overflow-wrap: anywhere; border: 0; background: none; padding: 0; outline: none; }
 
 .card-column { background: transparent; box-shadow: none; }
-.column-body { background: #e6e4dd; border-radius: 9px; padding: 8px; min-height: 90px; }
+.column-body { background: var(--column); border-radius: 14px; padding: 9px; min-height: 90px; }
 .column-body.drop-active { outline: 2px dashed var(--accent); outline-offset: 1px; }
 .column-title { width: 100%; border: 0; background: none; padding: 3px 5px 7px; font-weight: 650; outline: none; }
 .column-items { display: flex; flex-direction: column; gap: 7px; min-height: 40px; }
@@ -473,6 +475,35 @@ label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap:
 .tour-hint .btn { padding: 4px 10px; font-size: 13px; flex: none; }
 .practice .floating-bar { z-index: 40; }
 
+/* Shared shapes: rounder panels and controls throughout */
+.btn { border-radius: 9px; padding: 8px 14px; font-weight: 550; transition: background 0.12s, border-color 0.12s, box-shadow 0.12s; }
+.btn:hover { box-shadow: var(--shadow-1); }
+.icon-btn { border-radius: 9px; }
+.dialog { border-radius: 16px; padding: 22px; }
+.menu { border-radius: 12px; padding: 6px; }
+.menu button { border-radius: 8px; }
+.tile { border-radius: 14px; }
+.tile-art { border-radius: 9px; }
+.card { border-radius: 10px; }
+.card.selected { outline-offset: 2px; }
+.topbar { box-shadow: 0 1px 0 var(--line); border-bottom: 0; }
+.zoom-bar { border-radius: 12px; box-shadow: var(--shadow-1); padding: 4px; }
+.zoom-bar button { border-radius: 8px; }
+.floating-bar { border-radius: 14px; padding: 6px; }
+.floating-bar button { border-radius: 8px; }
+.tour-bubble { border-radius: 16px; }
+.comments-panel { box-shadow: var(--shadow-1); border-left-color: var(--line); }
+.side-row { border-radius: 9px; }
+.banner { border-radius: 12px; }
+
+/* Compact toolbar: icons with labels on hover */
+.toolbar { padding: 6px; gap: 2px; border-radius: 14px; box-shadow: var(--shadow-1); }
+.tool { position: relative; width: 40px; height: 40px; padding: 0; border-radius: 10px; justify-content: center; color: var(--ink); }
+.tool span { position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%); padding: 4px 9px; border-radius: 7px; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 500; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 2; }
+.tool:hover span, .tool:focus-visible span { opacity: 1; }
+/* A very short window scrolls the toolbar, which would clip these labels; buttons keep their hover titles. */
+@media (min-height: 560px) { .toolbar { overflow: visible; } }
+
 /* Web clipper */
 .clip-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .clip-card .btn { justify-content: center; }
@@ -499,8 +530,10 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .home { padding: 16px 16px 48px; }
   .title-input { max-width: 150px; }
   .sync { display: none; }
-  .toolbar { flex-direction: row; left: 8px; right: 8px; top: auto; bottom: 56px; overflow-x: auto; }
-  .tool { width: 52px; flex: none; }
+  .toolbar { flex-direction: row; left: 8px; right: 8px; top: auto; bottom: 56px; overflow-x: auto; overflow-y: hidden; }
+  .tool { width: 52px; height: 48px; flex: none; }
+  /* No hover on a phone, so the labels stay visible under the icons. */
+  .tool span { position: static; transform: none; opacity: 1; padding: 0; background: none; color: var(--ink-soft); font-size: 11px; }
   .floating-bar { bottom: 118px; }
   .inline-form { flex-direction: column; align-items: stretch; }
 }

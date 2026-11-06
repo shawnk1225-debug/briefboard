@@ -6,7 +6,7 @@ import type { Card, SketchStroke } from '../types'
 
 const WIDTH = 400
 const HEIGHT = 300
-const COLORS = ['#1d1f24', '#c8441f', '#2563c9', '#2e8b57', '#d4a017']
+const COLORS = ['#1d1f24', '#d4431c', '#2563c9', '#2e8b57', '#d4a017']
 const SIZES = [{ label: 'Fine', width: 2 }, { label: 'Medium', width: 4 }, { label: 'Thick', width: 9 }]
 
 export function strokePath(points: number[]): string {

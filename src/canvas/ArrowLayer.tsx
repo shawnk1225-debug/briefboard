@@ -124,7 +124,7 @@ export function ArrowLayer({ draft }: { draft: ArrowDraft | null }) {
           return (
             <g key={arrow.id}>
               {/* Stroke set here as well as in CSS: image export drops CSS on shapes inside an SVG. */}
-              <line className={`arrow-line${isSelected ? ' selected' : ''}`} stroke="#5d626c" strokeWidth={2} x1={a.x} y1={a.y} x2={b.x} y2={b.y} markerEnd="url(#arrowhead)" />
+              <line className={`arrow-line${isSelected ? ' selected' : ''}`} stroke="#596070" strokeWidth={2} x1={a.x} y1={a.y} x2={b.x} y2={b.y} markerEnd="url(#arrowhead)" />
               <line className="arrow-hit" data-arrow-ui x1={a.x} y1={a.y} x2={b.x} y2={b.y} onPointerDown={select} />
               {isSelected && !readOnly && (
                 <>

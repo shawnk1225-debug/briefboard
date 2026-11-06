@@ -19,6 +19,8 @@ export const TableIcon = () => <Icon><rect x="3.5" y="5" width="17" height="14" 
 export const DocIcon = () => <Icon><path d="M6.5 3.5h7.5l4 4v13h-11.5z" /><path d="M14 3.5v4h4M9.5 12h5.5M9.5 15.5h5.5" /></Icon>
 export const FileIcon = () => <Icon><path d="m19.5 11.5-7.8 7.8a4.5 4.5 0 0 1-6.4-6.4l8-8a3 3 0 0 1 4.3 4.2l-7.8 7.8a1.5 1.5 0 0 1-2.1-2.1l7-7" /></Icon>
 export const SketchIcon = () => <Icon><path d="m4 20 1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z" /><path d="m14.5 6.5 3 3" /></Icon>
+export const ExpandIcon = () => <Icon><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" /></Icon>
+export const CollapseIcon = () => <Icon><path d="M9 4.5V9H4.5M15 4.5V9h4.5M19.5 15H15v4.5M4.5 15H9v4.5" /></Icon>
 export const SearchIcon = () => <Icon><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4.5 4.5" /></Icon>
 export const HomeIcon = () => <Icon><path d="m4 11 8-6.5 8 6.5" /><path d="M6 9.5V19.5h12V9.5" /></Icon>
 export const MoreIcon = () => <Icon><circle cx="5.5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="18.5" cy="12" r="1" /></Icon>

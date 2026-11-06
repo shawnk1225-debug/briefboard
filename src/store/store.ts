@@ -53,6 +53,7 @@ interface State {
   shareToken: string | null
   // In the tutorial: edits work on screen, but nothing is ever saved or sent anywhere.
   practice: boolean
+  fullScreen: boolean
 }
 
 export const useStore = create<State>(() => ({
@@ -78,6 +79,7 @@ export const useStore = create<State>(() => ({
   readOnly: false,
   shareToken: null,
   practice: false,
+  fullScreen: false,
 }))
 
 const get = useStore.getState

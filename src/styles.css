@@ -504,6 +504,16 @@ label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap:
 /* A very short window scrolls the toolbar, which would clip these labels; buttons keep their hover titles. */
 @media (min-height: 560px) { .toolbar { overflow: visible; } }
 
+/* Top bar groups, which become floating panels in full screen */
+.topbar-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.board-page.full .topbar { position: absolute; top: 12px; left: 12px; right: 12px; min-height: 0; padding: 0; background: none; box-shadow: none; pointer-events: none; justify-content: space-between; z-index: 25; }
+.board-page.full .topbar-left, .board-page.full .topbar-actions { pointer-events: auto; background: var(--paper); border-radius: 14px; box-shadow: var(--shadow-1); padding: 4px 8px; }
+.board-page.full .topbar-left { padding-right: 12px; }
+.board-page.full .topbar-actions { margin-left: 0; flex: none; }
+.board-page.full .comments-btn { border-color: transparent; }
+.board-page.full .toolbar { top: 66px; max-height: calc(100% - 78px); }
+.board-page.full .comments-panel { top: 66px; right: 12px; bottom: 12px; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-2); overflow: hidden; z-index: 26; }
+
 /* Web clipper */
 .clip-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .clip-card .btn { justify-content: center; }

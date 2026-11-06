@@ -5,7 +5,9 @@ import { backend } from '../data/backend'
 import { FORMAT_LABELS } from '../lib/boardsView'
 import { closeBoard, loadSharedBoard, openCardComments, selectOnly, setEditing, useStore } from '../store/store'
 import type { SharedBatch } from '../types'
+import { setFullScreen, useFullScreenSync } from '../canvas/fullScreen'
 import { CommentsPanel } from '../ui/CommentsPanel'
+import { FullScreenButton } from '../ui/FullScreenButton'
 import { ZoomBar } from './BoardPage'
 
 const REFRESH_MS = 30000
@@ -46,6 +48,8 @@ function BatchList({ token, batch }: { token: string; batch: SharedBatch }) {
 function SharedBoardView({ token, boardId, cardId, batch }: { token: string; boardId: string; cardId: string | null; batch: SharedBatch }) {
   const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading')
   const stageRef = useRef<HTMLDivElement>(null)
+  const fullScreen = useStore((s) => s.fullScreen)
+  useFullScreenSync()
   const commentCount = useStore((s) => Object.values(s.comments).filter((c) => !c.resolved).length)
   const title = useStore((s) => s.boards[boardId]?.title)
   const parentId = batch.boards.find((b) => b.id === boardId)?.parentBoardId
@@ -118,8 +122,10 @@ function SharedBoardView({ token, boardId, cardId, batch }: { token: string; boa
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (useStore.getState().editingId) setEditing(null)
-      else selectOnly([])
+      const s = useStore.getState()
+      if (s.editingId) setEditing(null)
+      else if (Object.keys(s.selected).length) selectOnly([])
+      else if (s.fullScreen) setFullScreen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -128,26 +134,29 @@ function SharedBoardView({ token, boardId, cardId, batch }: { token: string; boa
   if (state === 'missing') return <Unavailable />
 
   return (
-    <div className="board-page read-only">
+    <div className={`board-page read-only${fullScreen ? ' full' : ''}`}>
       <header className="topbar">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <span>
-            <a href={`#/s/${token}`}>{batch.name}</a>
-            <i>/</i>
-          </span>
-          {parent && (
+        <div className="topbar-left">
+          <nav className="crumbs" aria-label="Breadcrumb">
             <span>
-              <a href={`#/s/${token}/b/${parent.id}`}>{parent.title}</a>
+              <a href={`#/s/${token}`}>{batch.name}</a>
               <i>/</i>
             </span>
-          )}
-          <strong className="share-title">{title}</strong>
-        </nav>
-        <span className="pill">View and comment</span>
+            {parent && (
+              <span>
+                <a href={`#/s/${token}/b/${parent.id}`}>{parent.title}</a>
+                <i>/</i>
+              </span>
+            )}
+            <strong className="share-title">{title}</strong>
+          </nav>
+          <span className="pill">View and comment</span>
+        </div>
         <div className="topbar-actions">
-          <button className="btn" onClick={() => openCardComments(null)}>
+          <button className="btn comments-btn" onClick={() => openCardComments(null)}>
             Comments{commentCount ? ` (${commentCount})` : ''}
           </button>
+          <FullScreenButton />
         </div>
       </header>
       <div className="board-stage" ref={stageRef}>

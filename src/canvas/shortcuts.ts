@@ -5,6 +5,7 @@ import { duplicateColumn, expandForCopy, pasteCards } from '../store/copy'
 import { addCard, patchContent, redo, removeCards, selectOnly, setEditing, setTool, undo, useStore } from '../store/store'
 import type { Card } from '../types'
 import { addFiles } from './addFiles'
+import { setFullScreen } from './fullScreen'
 import { fitToContent, getViewportEl, viewportCenter, zoomCentered } from './geometry'
 
 const CLIPBOARD_TYPE = 'application/x-briefboard'
@@ -40,7 +41,9 @@ export function useBoardShortcuts() {
         if (s.editingId) setEditing(null)
         else if (s.tool !== 'select') setTool('select')
         else if (s.commentsOpen) useStore.setState({ commentsOpen: false, commentCardId: null })
-        else selectOnly([])
+        else if (Object.keys(s.selected).length) selectOnly([])
+        // Only reached where the browser doesn't handle Esc for full screen itself.
+        else if (s.fullScreen) setFullScreen(false)
         return
       }
       // Drawing or a full-screen document has no focused text field, but keys must not reach the board.

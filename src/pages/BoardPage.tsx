@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import { addFiles } from '../canvas/addFiles'
 import { Canvas } from '../canvas/Canvas'
 import { centerOn, fitToContent, screenToWorld, viewportCenter, zoomCentered, getViewportEl } from '../canvas/geometry'
+import { useFullScreenSync } from '../canvas/fullScreen'
 import { duplicateSelection, useBoardShortcuts } from '../canvas/shortcuts'
 import { backend } from '../data/backend'
 import { exportMarkdown, exportPdf, exportPng } from '../lib/export'
@@ -27,6 +28,7 @@ import {
 import type { CardType } from '../types'
 import { showToast } from '../ui/feedback'
 import { CommentsPanel } from '../ui/CommentsPanel'
+import { FullScreenButton } from '../ui/FullScreenButton'
 import { ArrowIcon, BoardIcon, ColumnIcon, DocIcon, FileIcon, HomeIcon, ImageIcon, LinkIcon, MoreIcon, NoteIcon, RedoIcon, SearchIcon, SketchIcon, TableIcon, TodoIcon, UndoIcon } from '../ui/icons'
 import { openSearch } from '../ui/SearchDialog'
 
@@ -291,28 +293,30 @@ function TopBar({ boardId }: { boardId: string }) {
 
   return (
     <header className="topbar">
-      <a className="icon-btn" href="#/" aria-label="All boards" title="All boards">
-        <HomeIcon />
-      </a>
-      <nav className="crumbs" aria-label="Breadcrumb">
-        {crumbs.map((crumb) => (
-          <span key={crumb.id}>
-            <a href={`#/b/${crumb.id}`}>{crumb.title}</a>
-            <i>/</i>
-          </span>
-        ))}
-        <input
-          className="title-input"
-          aria-label="Board title"
-          value={board?.title ?? ''}
-          size={Math.max(8, (board?.title.length ?? 8) + 1)}
-          onChange={(e) => updateBoard(boardId, { title: e.target.value })}
-        />
-      </nav>
-      <span className={`sync sync-${syncStatus}`} role="status">
-        {STATUS_TEXT[syncStatus]}
-      </span>
-      {backend.mode === 'local' && <span className="pill" title="Connect Supabase to save to the cloud and share with your team">Browser only</span>}
+      <div className="topbar-left">
+        <a className="icon-btn" href="#/" aria-label="All boards" title="All boards">
+          <HomeIcon />
+        </a>
+        <nav className="crumbs" aria-label="Breadcrumb">
+          {crumbs.map((crumb) => (
+            <span key={crumb.id}>
+              <a href={`#/b/${crumb.id}`}>{crumb.title}</a>
+              <i>/</i>
+            </span>
+          ))}
+          <input
+            className="title-input"
+            aria-label="Board title"
+            value={board?.title ?? ''}
+            size={Math.max(8, (board?.title.length ?? 8) + 1)}
+            onChange={(e) => updateBoard(boardId, { title: e.target.value })}
+          />
+        </nav>
+        <span className={`sync sync-${syncStatus}`} role="status">
+          {STATUS_TEXT[syncStatus]}
+        </span>
+        {backend.mode === 'local' && <span className="pill" title="Connect Supabase to save to the cloud and share with your team">Browser only</span>}
+      </div>
       <div className="topbar-actions">
         <button className="btn comments-btn" onClick={() => openCardComments(null)}>
           Comments{commentCount ? ` (${commentCount})` : ''}
@@ -320,6 +324,7 @@ function TopBar({ boardId }: { boardId: string }) {
         <button className="icon-btn" aria-label="Undo" title="Undo (⌘Z)" disabled={!canUndo} onClick={undo}><UndoIcon /></button>
         <button className="icon-btn" aria-label="Redo" title="Redo (⇧⌘Z)" disabled={!canRedo} onClick={redo}><RedoIcon /></button>
         <button className="icon-btn" aria-label="Search" title="Search (⌘K)" onClick={openSearch}><SearchIcon /></button>
+        <FullScreenButton />
         <BoardMenu boardId={boardId} title={board?.title ?? 'board'} />
       </div>
     </header>
@@ -330,7 +335,9 @@ export function BoardPage({ boardId, focusCardId }: { boardId: string; focusCard
   const board = useStore((s) => s.boards[boardId])
   const loading = useStore((s) => s.boardLoading)
   const isEmpty = useStore((s) => Object.keys(s.cards).length === 0)
+  const fullScreen = useStore((s) => s.fullScreen)
   useBoardShortcuts()
+  useFullScreenSync()
 
   useEffect(() => {
     openBoard(boardId).catch((err) => {
@@ -361,7 +368,7 @@ export function BoardPage({ boardId, focusCardId }: { boardId: string; focusCard
   }
 
   return (
-    <div className="board-page">
+    <div className={`board-page${fullScreen ? ' full' : ''}`}>
       <TopBar boardId={boardId} />
       {board.deletedAt && (
         <div className="banner">

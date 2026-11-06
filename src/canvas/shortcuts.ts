@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { normalizeUrl, fetchLinkPreview } from '../lib/links'
 import { textToDoc } from '../lib/doc'
-import { expandForCopy, pasteCards } from '../store/copy'
+import { duplicateColumn, expandForCopy, pasteCards } from '../store/copy'
 import { addCard, patchContent, redo, removeCards, selectOnly, setEditing, setTool, undo, useStore } from '../store/store'
 import type { Card } from '../types'
 import { addFiles } from './addFiles'
@@ -25,9 +25,11 @@ export async function addLink(rawUrl: string, x: number, y: number): Promise<boo
 }
 
 export function duplicateSelection() {
-  const { selected } = useStore.getState()
+  const { selected, cards } = useStore.getState()
   const ids = Object.keys(selected)
-  if (ids.length) void pasteCards(expandForCopy(ids), 28, 28)
+  if (!ids.length) return
+  if (ids.length === 1 && cards[ids[0]]?.type === 'column') void duplicateColumn(ids[0])
+  else void pasteCards(expandForCopy(ids, { keepAttachedArrows: true }), 28, 28)
 }
 
 export function useBoardShortcuts() {

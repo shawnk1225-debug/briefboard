@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { backend } from '../src/data/backend'
 import { textToDoc } from '../src/lib/doc'
-import { copyBoardTree, expandForCopy, pasteCards } from '../src/store/copy'
+import { BUILTIN_TEMPLATES, buildTemplateCards, createFromBuiltin } from '../src/lib/templates'
+import { cloneCards, copyBoardTree, duplicateColumn, expandForCopy, pasteCards } from '../src/store/copy'
 import {
   addCard,
   addComment,
@@ -157,6 +158,62 @@ describe('board store', () => {
     expect(useStore.getState().comments.teammate).toBeUndefined()
     await deleteComment(comment.id)
     expect(await backend.listComments(boardId)).toHaveLength(0)
+  })
+
+  describe('brief templates', () => {
+    const hooks = (cards: Card[]) => cards.filter((c) => c.type === 'column' && c.content.title?.startsWith('Hook'))
+    const byTitle = (cards: Card[], title: string) => cards.find((c) => c.content.title === title)!
+    const arrowsTo = (cards: Card[], id: string) => cards.filter((c) => c.type === 'arrow' && c.content.to?.cardId === id)
+    const template = (id: string) => BUILTIN_TEMPLATES.find((t) => t.id === id)!
+
+    it('gives video 3 hooks into a hold, then a CTA, with no client field', () => {
+      const cards = buildTemplateCards(template('video-ad-brief'), boardId)
+      const hold = byTitle(cards, 'Hold and body copy')
+      expect(hooks(cards)).toHaveLength(3)
+      expect(arrowsTo(cards, hold.id).map((a) => a.content.from?.cardId).sort()).toEqual(hooks(cards).map((c) => c.id).sort())
+      expect(arrowsTo(cards, byTitle(cards, 'CTA').id).map((a) => a.content.from?.cardId)).toEqual([hold.id])
+      expect(cards.some((c) => /client/i.test(c.searchText))).toBe(false)
+      expect(byTitle(cards, 'Type of ad').content.items?.find((i) => i.done)?.text).toBe('Video ad')
+    })
+
+    it('gives static the same 3 hooks but leads straight to the CTA', () => {
+      const cards = buildTemplateCards(template('static-ad-brief'), boardId)
+      expect(hooks(cards)).toHaveLength(3)
+      expect(cards.some((c) => c.content.title === 'Hold and body copy')).toBe(false)
+      expect(arrowsTo(cards, byTitle(cards, 'CTA').id)).toHaveLength(3)
+      expect(byTitle(cards, 'Type of ad').content.items?.find((i) => i.done)?.text).toBe('Image ad')
+    })
+
+    it('adds another hook by duplicating, keeping its contents and its arrow', async () => {
+      const board = await createFromBuiltin(template('video-ad-brief'))
+      await openBoard(board.id)
+      const before = Object.values(cards())
+      // Hook 1 on purpose: the copy has to skip past hooks 2 and 3 to a free spot.
+      const hook = byTitle(before, 'Hook 1')
+      const last = byTitle(before, 'Hook 3')
+      const hold = byTitle(before, 'Hold and body copy')
+      await duplicateColumn(hook.id)
+      const after = Object.values(cards())
+      const added = hooks(after).find((c) => !before.some((b) => b.id === c.id))!
+      expect(hooks(after)).toHaveLength(4)
+      expect(added.content.title).toBe('Hook 4')
+      expect(hook.content.title).toBe('Hook 1')
+      expect(added.x).toBe(last.x + last.w + 20)
+      expect(added.y).toBe(hook.y)
+      expect(after.filter((c) => c.columnId === added.id)).toHaveLength(3)
+      expect(arrowsTo(after, hold.id).map((a) => a.content.from?.cardId)).toContain(added.id)
+      expect(Object.keys(useStore.getState().selected)).toEqual([added.id])
+      await queue.drain()
+      expect((await backend.listCards(board.id)).length).toBe(after.length)
+    })
+
+    it('does not carry an arrow to a card left behind on another board', async () => {
+      const a = addCard('note', 0, 0)
+      const b = addCard('note', 100, 0)
+      const link = addCard('arrow', 0, 0, { from: { cardId: a.id }, to: { cardId: b.id } })
+      const clones = await cloneCards([a, link], crypto.randomUUID(), crypto.randomUUID())
+      expect(clones.map((c) => c.type)).toEqual(['note'])
+    })
   })
 
   it('makes tables and file names searchable', async () => {

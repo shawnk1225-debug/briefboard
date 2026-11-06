@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { embedSrc, fetchLinkPreview, hostOf, normalizeUrl } from '../lib/links'
-import { patchContent } from '../store/store'
+import { patchContent, useStore } from '../store/store'
 import type { Card } from '../types'
 import { useTextCommit } from './useTextCommit'
 
 function LinkEntry({ card }: { card: Card }) {
   const [value, setValue] = useState('')
   const [invalid, setInvalid] = useState(false)
+  // Only a link card you just added grabs the cursor, not one that arrives with a template.
+  const [focusOnOpen] = useState(() => Boolean(useStore.getState().selected[card.id]))
   const submit = async () => {
     const url = normalizeUrl(value)
     if (!url) {
@@ -19,7 +21,7 @@ function LinkEntry({ card }: { card: Card }) {
     <div className="link-entry">
       <input
         data-interactive
-        autoFocus
+        autoFocus={focusOnOpen}
         placeholder="Paste a link and press Enter"
         aria-label="Link URL"
         value={value}

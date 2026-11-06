@@ -1,5 +1,5 @@
 import { createStore, del, get, set, update } from 'idb-keyval'
-import type { Board, Card, CardOp, Comment, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -7,6 +7,7 @@ const db = () => createStore('briefboard', 'data')
 type Boards = Record<string, Board>
 type Cards = Record<string, Card>
 type Comments = Record<string, Comment>
+type Folders = Record<string, Folder>
 
 // Browser-only storage, used until Supabase is configured. Other tabs of the
 // same browser get updates over a BroadcastChannel, like teammates over Realtime.
@@ -22,7 +23,85 @@ export class LocalBackend implements Backend {
 
   async listBoards() {
     const boards = (await get<Boards>('boards', this.store)) ?? {}
-    return Object.values(boards)
+    // Boards saved before folders and labels existed don't have these fields.
+    return Object.values(boards).map((b) => ({
+      ...b,
+      folderId: b.folderId ?? null,
+      status: b.status ?? null,
+      format: b.format ?? null,
+    }))
+  }
+
+  async listFolders() {
+    return Object.values((await get<Folders>('folders', this.store)) ?? {})
+  }
+
+  async insertFolder(folder: Folder) {
+    await update<Folders>('folders', (all = {}) => ({ ...all, [folder.id]: folder }), this.store)
+    this.emit({ table: 'folder', kind: 'upsert', folder })
+  }
+
+  async updateFolder(id: string, fields: Partial<Folder>) {
+    let next: Folder | undefined
+    await update<Folders>(
+      'folders',
+      (all = {}) => {
+        if (!all[id]) return all
+        next = { ...all[id], ...fields }
+        return { ...all, [id]: next }
+      },
+      this.store,
+    )
+    if (next) this.emit({ table: 'folder', kind: 'upsert', folder: next })
+  }
+
+  // Matches the database: subfolders go too, and their boards become unfiled.
+  async deleteFolder(id: string) {
+    const removed = new Set([id])
+    await update<Folders>(
+      'folders',
+      (all = {}) => {
+        for (const folder of Object.values(all)) if (folder.parentId === id) removed.add(folder.id)
+        return Object.fromEntries(Object.entries(all).filter(([key]) => !removed.has(key)))
+      },
+      this.store,
+    )
+    const affected = (await this.listBoards()).filter((b) => b.folderId && removed.has(b.folderId)).map((b) => b.id)
+    if (affected.length) await this.updateBoards(affected, { folderId: null })
+    for (const folderId of removed) this.emit({ table: 'folder', kind: 'delete', id: folderId })
+  }
+
+  async updateBoards(ids: string[], fields: Partial<Board>) {
+    const wanted = new Set(ids)
+    const changed: Board[] = []
+    await update<Boards>(
+      'boards',
+      (all = {}) => {
+        changed.length = 0
+        const next = { ...all }
+        for (const id of wanted) {
+          if (next[id]) {
+            next[id] = { ...next[id], ...fields }
+            changed.push(next[id])
+          }
+        }
+        return next
+      },
+      this.store,
+    )
+    for (const board of changed) this.emit({ table: 'board', kind: 'upsert', board, client: CLIENT_ID })
+  }
+
+  async listPins() {
+    return (await get<string[]>('pins', this.store)) ?? []
+  }
+
+  async pinBoard(boardId: string) {
+    await update<string[]>('pins', (all = []) => (all.includes(boardId) ? all : [...all, boardId]), this.store)
+  }
+
+  async unpinBoard(boardId: string) {
+    await update<string[]>('pins', (all = []) => all.filter((id) => id !== boardId), this.store)
   }
 
   async insertBoard(board: Board) {
@@ -36,7 +115,8 @@ export class LocalBackend implements Backend {
       'boards',
       (all = {}) => {
         if (!all[id]) return all
-        next = { ...all[id], ...fields, updatedAt: new Date().toISOString() }
+        // Matches the database: filing or labelling a board isn't editing it.
+        next = { ...all[id], ...fields, ...('title' in fields ? { updatedAt: new Date().toISOString() } : {}) }
         return { ...all, [id]: next }
       },
       this.store,

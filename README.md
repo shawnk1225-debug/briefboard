@@ -11,7 +11,9 @@ and nobody else can see it.
 ## Connect Supabase
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, paste and run all of [`supabase/schema.sql`](supabase/schema.sql).
+2. In **SQL Editor**, paste and run all of [`supabase/schema.sql`](supabase/schema.sql), then in a
+   new query do the same with
+   [`supabase/migrations/002_home_organization.sql`](supabase/migrations/002_home_organization.sql).
 3. In the SQL Editor, add yourself as owner, using the email you'll log in with:
 
    ```sql
@@ -56,6 +58,8 @@ It holds no login: saving happens on your site, under your normal sign-in.
 
 ## Good to know
 
+- **Folders** go two levels deep: products, then batches. Deleting a folder never deletes boards;
+  they move to Unfiled. Folders and labels are shared with the team, and pins are personal.
 - **File attachments** are limited to 50 MB each, Supabase's free-plan limit. Use video links for
   anything longer, since uploads use up free storage quickly.
 - **Comments** stay with a card if it's deleted and restored with undo, but aren't copied when a card

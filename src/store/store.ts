@@ -3,7 +3,7 @@ import { backend } from '../data/backend'
 import { CLIENT_ID } from '../data/clientId'
 import { SyncQueue, type SyncStatus } from '../data/syncQueue'
 import { cardSearchText } from '../lib/doc'
-import type { Board, Card, CardContent, CardType, Comment, RemoteEvent } from '../types'
+import type { Board, Card, CardContent, CardType, Comment, Folder, RemoteEvent } from '../types'
 
 export interface Viewport {
   x: number
@@ -45,6 +45,8 @@ interface State {
   future: Change[][]
   comments: Record<string, Comment>
   commentCardId: string | null
+  folders: Record<string, Folder>
+  pins: Record<string, true>
 }
 
 export const useStore = create<State>(() => ({
@@ -64,6 +66,8 @@ export const useStore = create<State>(() => ({
   future: [],
   comments: {},
   commentCardId: null,
+  folders: {},
+  pins: {},
 }))
 
 const get = useStore.getState
@@ -261,8 +265,62 @@ export const setViewport = (viewport: Viewport) => set({ viewport })
 // ---- Boards ----
 
 export async function loadBoards() {
-  const boards = await backend.listBoards()
-  set({ boards: Object.fromEntries(boards.map((b) => [b.id, b])) })
+  const [boards, folders, pins] = await Promise.all([backend.listBoards(), backend.listFolders(), backend.listPins()])
+  set({
+    boards: Object.fromEntries(boards.map((b) => [b.id, b])),
+    folders: Object.fromEntries(folders.map((f) => [f.id, f])),
+    pins: Object.fromEntries(pins.map((id) => [id, true as const])),
+  })
+}
+
+// Changes many boards at once, on screen first. If the save fails, the screen goes back
+// to what is really stored and the error is passed on so the page can say so.
+export async function updateBoards(ids: string[], fields: Partial<Board>) {
+  set((s) => {
+    const boards = { ...s.boards }
+    for (const id of ids) if (boards[id]) boards[id] = { ...boards[id], ...fields }
+    return { boards }
+  })
+  try {
+    await backend.updateBoards(ids, fields)
+  } catch (err) {
+    await loadBoards().catch(console.error)
+    throw err
+  }
+}
+
+export async function setPinned(boardId: string, pinned: boolean) {
+  const apply = (on: boolean) =>
+    set((s) => {
+      const pins = { ...s.pins }
+      if (on) pins[boardId] = true
+      else delete pins[boardId]
+      return { pins }
+    })
+  apply(pinned)
+  try {
+    await (pinned ? backend.pinBoard(boardId) : backend.unpinBoard(boardId))
+  } catch (err) {
+    apply(!pinned)
+    throw err
+  }
+}
+
+export async function createFolder(name: string, parentId: string | null): Promise<Folder> {
+  const folder: Folder = { id: crypto.randomUUID(), parentId, name }
+  await backend.insertFolder(folder)
+  set((s) => ({ folders: { ...s.folders, [folder.id]: folder } }))
+  return folder
+}
+
+export async function updateFolder(id: string, fields: Partial<Folder>) {
+  await backend.updateFolder(id, fields)
+  set((s) => (s.folders[id] ? { folders: { ...s.folders, [id]: { ...s.folders[id], ...fields } } } : s))
+}
+
+export async function deleteFolder(id: string) {
+  await backend.deleteFolder(id)
+  await loadBoards()
 }
 
 export async function createBoard(fields: Partial<Board> = {}): Promise<Board> {
@@ -273,6 +331,9 @@ export async function createBoard(fields: Partial<Board> = {}): Promise<Board> {
     isTemplate: false,
     deletedAt: null,
     updatedAt: new Date().toISOString(),
+    folderId: null,
+    status: null,
+    format: null,
     ...fields,
   }
   set((s) => ({ boards: { ...s.boards, [board.id]: board } }))
@@ -394,6 +455,13 @@ export function handleRemote(event: RemoteEvent) {
       delete comments[event.id]
       set({ comments })
     }
+    return
+  }
+  if (event.table === 'folder') {
+    const folders = { ...s.folders }
+    if (event.kind === 'upsert') folders[event.folder.id] = event.folder
+    else delete folders[event.id]
+    set({ folders })
     return
   }
   if (event.table === 'board') {

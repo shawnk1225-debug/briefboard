@@ -1,4 +1,4 @@
-import type { Board, Card, CardOp, Comment, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit } from '../types'
 import { LocalBackend } from './localBackend'
 import { SupabaseBackend, supabaseConfigured } from './supabaseBackend'
 
@@ -7,6 +7,14 @@ export interface Backend {
   listBoards(): Promise<Board[]>
   insertBoard(board: Board): Promise<void>
   updateBoard(id: string, fields: Partial<Board>): Promise<void>
+  updateBoards(ids: string[], fields: Partial<Board>): Promise<void>
+  listFolders(): Promise<Folder[]>
+  insertFolder(folder: Folder): Promise<void>
+  updateFolder(id: string, fields: Partial<Folder>): Promise<void>
+  deleteFolder(id: string): Promise<void>
+  listPins(): Promise<string[]>
+  pinBoard(boardId: string): Promise<void>
+  unpinBoard(boardId: string): Promise<void>
   deleteBoardForever(id: string): Promise<void>
   listCards(boardId: string): Promise<Card[]>
   applyOps(ops: CardOp[]): Promise<void>

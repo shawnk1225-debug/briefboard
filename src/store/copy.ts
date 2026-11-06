@@ -57,7 +57,7 @@ export async function copyBoardTree(sourceId: string, fields: Partial<Board> = {
   await queue.drain()
   const source = useStore.getState().boards[sourceId]
   if (!source) return null
-  const board = await createBoard({ title: source.title, ...fields })
+  const board = await createBoard({ title: source.title, format: source.format, ...fields })
   const cards = await backend.listCards(sourceId)
   const clones = await cloneCards(cards, board.id, board.id)
   if (clones.length) await backend.applyOps(clones.map((card) => ({ kind: 'insert', card })))

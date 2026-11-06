@@ -1,6 +1,6 @@
 import { backend } from '../data/backend'
 import { createBoard } from '../store/store'
-import type { Board, Card, CardContent, CardType, RichDoc } from '../types'
+import type { Board, BoardFormat, Card, CardContent, CardType, RichDoc } from '../types'
 import { cardSearchText } from './doc'
 
 const text = (value: string): RichDoc => ({ type: 'text', text: value })
@@ -26,6 +26,7 @@ export interface BuiltinTemplate {
   id: string
   title: string
   description: string
+  format: BoardFormat
   cards: Spec[]
 }
 
@@ -89,6 +90,7 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     id: 'video-ad-brief',
     title: 'Video ad brief',
     description: 'Concept and brief on the left. 3 hooks into a hold and body, then the CTA.',
+    format: 'video',
     cards: [
       ...briefSide('Video ad', ['1080x1080 (1:1)', '1080x1350 (4:5)', '1080x1920 (9:16)', '1920x1080 (16:9)'], ['3 hooks', '1 hold', '3 total ads']),
       section('Ad structure', RIGHT_X, STRUCTURE_W),
@@ -105,6 +107,7 @@ export const BUILTIN_TEMPLATES: BuiltinTemplate[] = [
     id: 'static-ad-brief',
     title: 'Static ad brief',
     description: 'Concept and brief on the left. 3 hooks leading straight into the CTA.',
+    format: 'static',
     cards: [
       ...briefSide('Image ad', ['1080x1080 (1:1)', '1080x1350 (4:5)', '1080x1920 (9:16)'], ['3 hooks', '3 total ads']),
       section('Ad structure', RIGHT_X, STRUCTURE_W),
@@ -165,7 +168,7 @@ export function buildTemplateCards(template: BuiltinTemplate, boardId: string): 
 }
 
 export async function createFromBuiltin(template: BuiltinTemplate, fields: Partial<Board> = {}): Promise<Board> {
-  const board = await createBoard({ title: template.title, ...fields })
+  const board = await createBoard({ title: template.title, format: template.format, ...fields })
   const cards = buildTemplateCards(template, board.id)
   await backend.applyOps(cards.map((card) => ({ kind: 'insert', card })))
   return board

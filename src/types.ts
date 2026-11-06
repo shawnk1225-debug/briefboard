@@ -81,6 +81,9 @@ export interface Card {
   searchText: string
 }
 
+export type BoardStatus = 'draft' | 'in_production' | 'live' | 'done'
+export type BoardFormat = 'video' | 'static'
+
 export interface Board {
   id: string
   parentBoardId: string | null
@@ -88,6 +91,16 @@ export interface Board {
   isTemplate: boolean
   deletedAt: string | null
   updatedAt: string
+  folderId: string | null
+  status: BoardStatus | null
+  format: BoardFormat | null
+}
+
+// Two levels: a product folder (no parent) and its batch folders.
+export interface Folder {
+  id: string
+  parentId: string | null
+  name: string
 }
 
 export type CardOp =
@@ -102,6 +115,8 @@ export type RemoteEvent =
   | { table: 'board'; kind: 'delete'; id: string }
   | { table: 'comment'; kind: 'upsert'; comment: Comment }
   | { table: 'comment'; kind: 'delete'; id: string }
+  | { table: 'folder'; kind: 'upsert'; folder: Folder }
+  | { table: 'folder'; kind: 'delete'; id: string }
 
 export interface Comment {
   id: string

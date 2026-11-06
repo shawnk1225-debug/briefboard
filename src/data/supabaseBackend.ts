@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Board, Card, CardOp, Comment, Member, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -35,7 +35,12 @@ const rowToBoard = (r: any): Board => ({
   isTemplate: r.is_template,
   deletedAt: r.deleted_at,
   updatedAt: r.updated_at,
+  folderId: r.folder_id ?? null,
+  status: r.status ?? null,
+  format: r.format ?? null,
 })
+
+const rowToFolder = (r: any): Folder => ({ id: r.id, parentId: r.parent_id, name: r.name })
 
 const rowToComment = (r: any): Comment => ({
   id: r.id,
@@ -67,7 +72,15 @@ const BOARD_COLUMNS: Record<string, string> = {
   title: 'title',
   isTemplate: 'is_template',
   deletedAt: 'deleted_at',
+  folderId: 'folder_id',
+  status: 'status',
+  format: 'format',
 }
+
+const FOLDER_COLUMNS: Record<string, string> = { id: 'id', parentId: 'parent_id', name: 'name' }
+
+// One request updates at most this many boards, to keep the request URL a safe length.
+const UPDATE_CHUNK = 100
 
 function toRow(fields: Record<string, unknown>, columns: Record<string, string>) {
   const row: Record<string, unknown> = { updated_client: CLIENT_ID }
@@ -75,6 +88,17 @@ function toRow(fields: Record<string, unknown>, columns: Record<string, string>)
     if (columns[key]) row[columns[key]] = value
   }
   return row
+}
+
+// Supabase caps how many rows one request returns (1,000 by default) without any error,
+// so this keeps asking until a page comes back empty. It doesn't assume the page size.
+export async function fetchAllPages<T>(fetchPage: (from: number, to: number) => Promise<T[]>, pageSize = 1000): Promise<T[]> {
+  const rows: T[] = []
+  for (;;) {
+    const page = await fetchPage(rows.length, rows.length + pageSize - 1)
+    if (!page.length) return rows
+    rows.push(...page)
+  }
 }
 
 // Escapes the wildcards ilike would otherwise interpret in a search term.
@@ -86,9 +110,66 @@ export class SupabaseBackend implements Backend {
   private signedUrls = new Map<string, { url: string; expires: number }>()
 
   async listBoards() {
-    const { data, error } = await this.db.from('boards').select('*')
+    const rows = await fetchAllPages(async (from, to) => {
+      // Sorted, so rows can't shift between pages and be skipped.
+      const { data, error } = await this.db.from('boards').select('*').order('id').range(from, to)
+      if (error) throw error
+      return data
+    })
+    return rows.map(rowToBoard)
+  }
+
+  async listFolders() {
+    const rows = await fetchAllPages(async (from, to) => {
+      const { data, error } = await this.db.from('folders').select('*').order('id').range(from, to)
+      if (error) throw error
+      return data
+    })
+    return rows.map(rowToFolder)
+  }
+
+  async insertFolder(folder: Folder) {
+    const { error } = await this.db.from('folders').insert(toRow({ ...folder }, FOLDER_COLUMNS))
     if (error) throw error
-    return data.map(rowToBoard)
+  }
+
+  async updateFolder(id: string, fields: Partial<Folder>) {
+    const { error } = await this.db.from('folders').update(toRow(fields, FOLDER_COLUMNS)).eq('id', id)
+    if (error) throw error
+  }
+
+  async deleteFolder(id: string) {
+    const { error } = await this.db.from('folders').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async updateBoards(ids: string[], fields: Partial<Board>) {
+    for (let i = 0; i < ids.length; i += UPDATE_CHUNK) {
+      const { error } = await this.db
+        .from('boards')
+        .update(toRow(fields, BOARD_COLUMNS))
+        .in('id', ids.slice(i, i + UPDATE_CHUNK))
+      if (error) throw error
+    }
+  }
+
+  async listPins() {
+    const rows = await fetchAllPages(async (from, to) => {
+      const { data, error } = await this.db.from('pins').select('board_id').order('board_id').range(from, to)
+      if (error) throw error
+      return data
+    })
+    return rows.map((row: any) => row.board_id as string)
+  }
+
+  async pinBoard(boardId: string) {
+    const { error } = await this.db.from('pins').upsert({ board_id: boardId }, { onConflict: 'email,board_id', ignoreDuplicates: true })
+    if (error) throw error
+  }
+
+  async unpinBoard(boardId: string) {
+    const { error } = await this.db.from('pins').delete().eq('board_id', boardId)
+    if (error) throw error
   }
 
   async insertBoard(board: Board) {
@@ -107,9 +188,12 @@ export class SupabaseBackend implements Backend {
   }
 
   async listCards(boardId: string) {
-    const { data, error } = await this.db.from('cards').select('*').eq('board_id', boardId)
-    if (error) throw error
-    return data.map(rowToCard)
+    const rows = await fetchAllPages(async (from, to) => {
+      const { data, error } = await this.db.from('cards').select('*').eq('board_id', boardId).order('id').range(from, to)
+      if (error) throw error
+      return data
+    })
+    return rows.map(rowToCard)
   }
 
   async applyOps(ops: CardOp[]) {
@@ -155,6 +239,10 @@ export class SupabaseBackend implements Backend {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'boards' }, (payload) => {
         if (payload.eventType === 'DELETE') handler({ table: 'board', kind: 'delete', id: (payload.old as any).id })
         else handler({ table: 'board', kind: 'upsert', board: rowToBoard(payload.new), client: (payload.new as any).updated_client })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'folders' }, (payload) => {
+        if (payload.eventType === 'DELETE') handler({ table: 'folder', kind: 'delete', id: (payload.old as any).id })
+        else handler({ table: 'folder', kind: 'upsert', folder: rowToFolder(payload.new) })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, (payload) => {
         if (payload.eventType === 'DELETE') handler({ table: 'comment', kind: 'delete', id: (payload.old as any).id })

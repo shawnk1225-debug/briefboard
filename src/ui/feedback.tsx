@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { create } from 'zustand'
 
 interface ConfirmRequest {
@@ -7,7 +7,65 @@ interface ConfirmRequest {
   resolve: (ok: boolean) => void
 }
 
-const useFeedback = create<{ toast: string | null; confirm: ConfirmRequest | null }>(() => ({ toast: null, confirm: null }))
+interface InputRequest {
+  title: string
+  label: string
+  value: string
+  confirmLabel: string
+  // With options the dialog shows a dropdown; without them, a text box.
+  options?: { value: string; label: string }[]
+  resolve: (value: string | null) => void
+}
+
+const useFeedback = create<{ toast: string | null; confirm: ConfirmRequest | null; input: InputRequest | null }>(() => ({
+  toast: null,
+  confirm: null,
+  input: null,
+}))
+
+export const askInput = (request: Omit<InputRequest, 'resolve'>) =>
+  new Promise<string | null>((resolve) => useFeedback.setState({ input: { ...request, resolve } }))
+
+function InputDialog({ request }: { request: InputRequest }) {
+  const [value, setValue] = useState(request.value)
+  const finish = (result: string | null) => {
+    request.resolve(result)
+    useFeedback.setState({ input: null })
+  }
+  const empty = !request.options && !value.trim()
+  return (
+    <div className="dialog-backdrop" onKeyDown={(e) => e.key === 'Escape' && finish(null)}>
+      <form
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={request.title}
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!empty) finish(request.options ? value : value.trim())
+        }}
+      >
+        <h2>{request.title}</h2>
+        <label>
+          {request.label}
+          {request.options ? (
+            <select autoFocus value={value} onChange={(e) => setValue(e.target.value)}>
+              {request.options.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          ) : (
+            <input autoFocus maxLength={120} value={value} onChange={(e) => setValue(e.target.value)} />
+          )}
+        </label>
+        <div className="dialog-actions">
+          <button type="button" className="btn" onClick={() => finish(null)}>Cancel</button>
+          <button className="btn primary" disabled={empty}>{request.confirmLabel}</button>
+        </div>
+      </form>
+    </div>
+  )
+}
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -23,6 +81,7 @@ export const askConfirm = (message: string, confirmLabel: string) =>
 export function Feedback() {
   const toast = useFeedback((s) => s.toast)
   const confirm = useFeedback((s) => s.confirm)
+  const input = useFeedback((s) => s.input)
   const confirmRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -41,6 +100,7 @@ export function Feedback() {
           {toast}
         </div>
       )}
+      {input && <InputDialog request={input} />}
       {confirm && (
         <div className="dialog-backdrop" onKeyDown={(e) => e.key === 'Escape' && answer(false)}>
           <div className="dialog" role="alertdialog" aria-modal="true" aria-label={confirm.message}>

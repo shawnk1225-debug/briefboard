@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { patchContent } from '../store/store'
+import { patchContent, useStore } from '../store/store'
 import type { Card } from '../types'
 import { useTextCommit } from './useTextCommit'
 
@@ -47,6 +47,7 @@ function Cell({ value, label, onChange, onFocus, onBlur, onEnter }: {
 export function TableBody({ card, selected }: { card: Card; selected: boolean }) {
   const rows = card.content.rows ?? EMPTY_TABLE
   const commit = useTextCommit(card.id)
+  const readOnly = useStore((s) => s.readOnly)
   const [active, setActive] = useState({ row: 0, column: 0 })
   const tableRef = useRef<HTMLTableElement>(null)
   const columnCount = rows[0]?.length ?? 0
@@ -107,7 +108,7 @@ export function TableBody({ card, selected }: { card: Card; selected: boolean })
           ))}
         </tbody>
       </table>
-      {selected && (
+      {selected && !readOnly && (
         <div className="table-actions" data-interactive data-html2image-ignore>
           <button onClick={addRow}>+ Row</button>
           <button onClick={addColumn}>+ Column</button>

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabaseConfigured } from './data/supabaseBackend'
-import { parseRoute, useHash } from './lib/route'
+import { parseRoute, parseShareRoute, useHash } from './lib/route'
 import { BoardPage } from './pages/BoardPage'
 import { ClipPage } from './pages/ClipPage'
 import { AuthGate } from './pages/AuthGate'
 import { HomePage } from './pages/HomePage'
+import { SharePage } from './pages/SharePage'
 import { loadBoards, queue, refreshOpenBoard, startSync, stopSync, useStore } from './store/store'
 import { Feedback } from './ui/feedback'
 import { SearchDialog } from './ui/SearchDialog'
@@ -62,6 +63,16 @@ function Main() {
 }
 
 export function App() {
+  const share = parseShareRoute(useHash())
+  // Links work with no login, so they skip the sign-in screen and the team's data entirely.
+  if (share) {
+    return (
+      <>
+        <SharePage token={share.token} boardId={share.boardId} cardId={share.cardId} />
+        <Feedback />
+      </>
+    )
+  }
   return (
     <>
       {supabaseConfigured ? (

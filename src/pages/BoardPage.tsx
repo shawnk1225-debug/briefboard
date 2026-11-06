@@ -12,6 +12,7 @@ import {
   closeBoard,
   createBoard,
   openBoard,
+  openCardComments,
   patchContent,
   redo,
   removeCards,
@@ -191,7 +192,7 @@ function SelectionBar() {
       )}
       <span className="sep" />
       {ids.length === 1 && cards[ids[0]]?.type !== 'arrow' && (
-        <button onClick={() => useStore.setState({ commentCardId: ids[0] })}>Comment</button>
+        <button onClick={() => openCardComments(ids[0])}>Comment</button>
       )}
       <button onClick={duplicateSelection}>Duplicate</button>
       <button className="danger-text" onClick={() => removeCards(ids)}>
@@ -201,7 +202,7 @@ function SelectionBar() {
   )
 }
 
-function ZoomBar() {
+export function ZoomBar() {
   const zoom = useStore((s) => s.viewport.zoom)
   return (
     <div className="zoom-bar">
@@ -276,6 +277,7 @@ function TopBar({ boardId }: { boardId: string }) {
   const syncStatus = useStore((s) => s.syncStatus)
   const canUndo = useStore((s) => s.past.length > 0)
   const canRedo = useStore((s) => s.future.length > 0)
+  const commentCount = useStore((s) => Object.values(s.comments).filter((c) => !c.resolved).length)
   const board = boards[boardId]
 
   const crumbs = []
@@ -306,6 +308,9 @@ function TopBar({ boardId }: { boardId: string }) {
       </span>
       {backend.mode === 'local' && <span className="pill" title="Connect Supabase to save to the cloud and share with your team">Browser only</span>}
       <div className="topbar-actions">
+        <button className="btn comments-btn" onClick={() => openCardComments(null)}>
+          Comments{commentCount ? ` (${commentCount})` : ''}
+        </button>
         <button className="icon-btn" aria-label="Undo" title="Undo (⌘Z)" disabled={!canUndo} onClick={undo}><UndoIcon /></button>
         <button className="icon-btn" aria-label="Redo" title="Redo (⇧⌘Z)" disabled={!canRedo} onClick={redo}><RedoIcon /></button>
         <button className="icon-btn" aria-label="Search" title="Search (⌘K)" onClick={openSearch}><SearchIcon /></button>

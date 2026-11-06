@@ -57,24 +57,26 @@ function FormatBar({ editor }: { editor: Editor }) {
 
 export function RichEditor({ card, className = 'note-text' }: { card: Card; className?: string }) {
   const before = useRef(card)
+  const readOnly = useStore((s) => s.readOnly)
   const editor = useEditor({
     extensions,
     content: card.content.doc ?? '',
-    autofocus: 'end',
+    editable: !readOnly,
+    autofocus: readOnly ? false : 'end',
     shouldRerenderOnTransaction: true,
     editorProps: { attributes: { class: className } },
     onUpdate: ({ editor: e }) => patchContent(card.id, { doc: e.getJSON() as Card['content']['doc'] }, { history: false }),
   })
   // TipTap's autofocus waits a frame, which would lose keys typed right after the click.
   useEffect(() => {
-    if (editor?.view.dom.isConnected) editor.view.dom.focus({ preventScroll: true })
-  }, [editor])
+    if (!readOnly && editor?.view.dom.isConnected) editor.view.dom.focus({ preventScroll: true })
+  }, [editor, readOnly])
   // Everything typed in one editing session becomes a single undo step.
   useEffect(() => () => commitInteraction([before.current], { sync: false }), [])
   return (
     <>
       <EditorContent editor={editor} />
-      {editor && <FormatBar editor={editor} />}
+      {editor && !readOnly && <FormatBar editor={editor} />}
     </>
   )
 }

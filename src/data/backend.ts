@@ -1,4 +1,4 @@
-import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
 import { LocalBackend } from './localBackend'
 import { SupabaseBackend, supabaseConfigured } from './supabaseBackend'
 
@@ -26,7 +26,12 @@ export interface Backend {
   fileUrl(ref: string, downloadName?: string): Promise<string>
   search(query: string): Promise<SearchHit[]>
   listComments(boardId: string): Promise<Comment[]>
-  addComment(comment: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body'>): Promise<Comment>
+  addComment(comment: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body' | 'internal'>): Promise<Comment>
+  // Secret links. Setting a token makes image and file requests use that link's access.
+  setShareToken(token: string | null): void
+  getSharedBatch(token: string): Promise<SharedBatch | null>
+  getSharedBoard(token: string, boardId: string): Promise<SharedBoard | null>
+  addSharedComment(token: string, boardId: string, cardId: string | null, name: string, body: string): Promise<Comment>
   setCommentResolved(id: string, resolved: boolean): Promise<void>
   deleteComment(id: string): Promise<void>
   currentUser(): Promise<string>

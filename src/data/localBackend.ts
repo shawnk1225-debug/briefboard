@@ -1,5 +1,5 @@
 import { createStore, del, get, set, update } from 'idb-keyval'
-import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -229,11 +229,71 @@ export class LocalBackend implements Backend {
 
   async listComments(boardId: string) {
     const all = (await get<Comments>('comments', this.store)) ?? {}
-    return Object.values(all).filter((c) => c.boardId === boardId)
+    return Object.values(all)
+      .filter((c) => c.boardId === boardId)
+      .map((c) => ({ ...c, internal: c.internal ?? false, authorName: c.authorName ?? null }))
   }
 
-  async addComment(fields: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body'>) {
-    const comment: Comment = { ...fields, authorEmail: 'You', resolved: false, createdAt: new Date().toISOString() }
+  // Secret links, matching the database's rules for browser-only mode.
+  setShareToken() {}
+
+  private async sharedBoardIds(token: string): Promise<{ folder: Folder; ids: Set<string>; boards: Board[] } | null> {
+    if (token.length < 32) return null
+    const folders = await this.listFolders()
+    const folder = folders.find((f) => f.shareToken === token)
+    if (!folder) return null
+    const folderIds = new Set([folder.id, ...folders.filter((f) => f.parentId === folder.id).map((f) => f.id)])
+    const all = await this.listBoards()
+    const live = all.filter((b) => !b.deletedAt && !b.isTemplate)
+    const ids = new Set(live.filter((b) => !b.parentBoardId && b.folderId && folderIds.has(b.folderId)).map((b) => b.id))
+    for (let grew = true; grew; ) {
+      grew = false
+      for (const b of live) {
+        if (b.parentBoardId && ids.has(b.parentBoardId) && !ids.has(b.id)) {
+          ids.add(b.id)
+          grew = true
+        }
+      }
+    }
+    return { folder, ids, boards: live.filter((b) => ids.has(b.id)) }
+  }
+
+  async getSharedBatch(token: string): Promise<SharedBatch | null> {
+    const shared = await this.sharedBoardIds(token)
+    return shared && { name: shared.folder.name, boards: shared.boards }
+  }
+
+  async getSharedBoard(token: string, boardId: string): Promise<SharedBoard | null> {
+    const shared = await this.sharedBoardIds(token)
+    const board = shared?.boards.find((b) => b.id === boardId)
+    if (!board) return null
+    const comments = (await this.listComments(boardId))
+      .filter((c) => !c.internal)
+      .map((c) => ({ ...c, authorName: c.authorName ?? c.authorEmail, authorEmail: '' }))
+    return { board, cards: await this.listCards(boardId), comments }
+  }
+
+  async addSharedComment(token: string, boardId: string, cardId: string | null, name: string, body: string) {
+    const shared = await this.sharedBoardIds(token)
+    if (!shared?.ids.has(boardId)) throw new Error('This link is not active')
+    const comment: Comment = {
+      id: crypto.randomUUID(),
+      boardId,
+      cardId,
+      authorEmail: '',
+      authorName: name,
+      body,
+      resolved: false,
+      internal: false,
+      createdAt: new Date().toISOString(),
+    }
+    await update<Comments>('comments', (all = {}) => ({ ...all, [comment.id]: comment }), this.store)
+    this.emit({ table: 'comment', kind: 'upsert', comment })
+    return comment
+  }
+
+  async addComment(fields: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body' | 'internal'>) {
+    const comment: Comment = { ...fields, authorEmail: 'You', authorName: null, resolved: false, createdAt: new Date().toISOString() }
     await update<Comments>('comments', (all = {}) => ({ ...all, [comment.id]: comment }), this.store)
     this.emit({ table: 'comment', kind: 'upsert', comment })
     return comment

@@ -3,7 +3,7 @@ import { backend } from '../data/backend'
 import { CLIENT_ID } from '../data/clientId'
 import { SyncQueue, type SyncStatus } from '../data/syncQueue'
 import { cardSearchText } from '../lib/doc'
-import type { Board, Card, CardContent, CardType, Comment, Folder, RemoteEvent } from '../types'
+import type { Board, Card, CardContent, CardType, Comment, Folder, RemoteEvent, SharedBoard } from '../types'
 
 export interface Viewport {
   x: number
@@ -47,6 +47,10 @@ interface State {
   commentCardId: string | null
   folders: Record<string, Folder>
   pins: Record<string, true>
+  commentsOpen: boolean
+  // Viewing through a secret link: nothing on the canvas can change.
+  readOnly: boolean
+  shareToken: string | null
 }
 
 export const useStore = create<State>(() => ({
@@ -68,6 +72,9 @@ export const useStore = create<State>(() => ({
   commentCardId: null,
   folders: {},
   pins: {},
+  commentsOpen: false,
+  readOnly: false,
+  shareToken: null,
 }))
 
 const get = useStore.getState
@@ -97,6 +104,7 @@ function pushHistory(changes: Change[]) {
 // Single path for every card change: updates the screen, queues the save, records undo.
 export function applyEdits(edits: Edit[], { history = true, sync = true }: { history?: boolean; sync?: boolean } = {}) {
   const s = get()
+  if (s.readOnly) return
   const cards = { ...s.cards }
   const selected = { ...s.selected }
   const changes: Change[] = []
@@ -144,7 +152,8 @@ export function applyEdits(edits: Edit[], { history = true, sync = true }: { his
 
 // Closes out a live interaction (drag, resize, typing) as one undo step.
 export function commitInteraction(before: Card[], { sync = true }: { sync?: boolean } = {}) {
-  const { cards } = get()
+  const { cards, readOnly } = get()
+  if (readOnly) return
   const changes: Change[] = []
   for (const old of before) {
     const current = cards[old.id]
@@ -341,7 +350,38 @@ export async function createBoard(fields: Partial<Board> = {}): Promise<Board> {
   return board
 }
 
+// Where opening a nested board goes, which differs when viewing through a link.
+export function boardPath(id: string): string {
+  const { shareToken } = get()
+  return shareToken ? `/s/${shareToken}/b/${id}` : `/b/${id}`
+}
+
+// Enters read-only link mode for one board. Comments are kept current by polling,
+// because link visitors have no login for live updates.
+export function loadSharedBoard(data: SharedBoard) {
+  const s = get()
+  const sameBoard = s.boardId === data.board.id
+  set({
+    boardId: data.board.id,
+    boardLoading: false,
+    cards: Object.fromEntries(data.cards.map((c) => [c.id, c])),
+    comments: Object.fromEntries(data.comments.map((c) => [c.id, c])),
+    ...(sameBoard ? {} : { selected: {}, editingId: null, commentCardId: null, viewport: { x: 120, y: 90, zoom: 1 } }),
+  })
+}
+
+export function openCardComments(cardId: string | null) {
+  set({ commentsOpen: true, commentCardId: cardId })
+}
+
+export async function addSharedComment(cardId: string | null, name: string, body: string) {
+  const { shareToken, boardId } = get()
+  const comment = await backend.addSharedComment(shareToken!, boardId!, cardId, name, body)
+  set((s) => ({ comments: { ...s.comments, [comment.id]: comment } }))
+}
+
 export function updateBoard(id: string, fields: Partial<Board>) {
+  if (get().readOnly) return
   set((s) => (s.boards[id] ? { boards: { ...s.boards, [id]: { ...s.boards[id], ...fields } } } : s))
   void backend.updateBoard(id, fields).catch((err) => console.error('Board save failed', err))
 }
@@ -403,8 +443,8 @@ export async function openBoard(boardId: string) {
   })
 }
 
-export async function addComment(cardId: string, body: string) {
-  const comment = await backend.addComment({ id: crypto.randomUUID(), boardId: get().boardId!, cardId, body })
+export async function addComment(cardId: string | null, body: string, internal = false) {
+  const comment = await backend.addComment({ id: crypto.randomUUID(), boardId: get().boardId!, cardId, body, internal })
   set((s) => ({ comments: { ...s.comments, [comment.id]: comment } }))
 }
 
@@ -425,6 +465,8 @@ export async function deleteComment(id: string) {
 export function closeBoard() {
   saveViewport()
   set({ boardId: null, cards: {}, selected: {}, editingId: null, past: [], future: [], comments: {}, commentCardId: null })
+  // A link visitor has no access to the team's board list.
+  if (get().readOnly) return
   // The home page sorts by last edit, so it needs dates that include this visit.
   void queue
     .drain()

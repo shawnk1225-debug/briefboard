@@ -69,6 +69,7 @@ function ArrowHandle({ arrow, which, at }: { arrow: Card; which: 'from' | 'to'; 
 export function ArrowLayer({ draft }: { draft: ArrowDraft | null }) {
   const arrows = useStore(useShallow((s) => Object.values(s.cards).filter((c) => c.type === 'arrow')))
   const selected = useStore((s) => s.selected)
+  const readOnly = useStore((s) => s.readOnly)
   // Anything that can move a card also moves the arrows attached to it.
   const cards = useStore((s) => s.cards)
   const [rects, setRects] = useState<Rects>({})
@@ -125,7 +126,7 @@ export function ArrowLayer({ draft }: { draft: ArrowDraft | null }) {
               {/* Stroke set here as well as in CSS: image export drops CSS on shapes inside an SVG. */}
               <line className={`arrow-line${isSelected ? ' selected' : ''}`} stroke="#5d626c" strokeWidth={2} x1={a.x} y1={a.y} x2={b.x} y2={b.y} markerEnd="url(#arrowhead)" />
               <line className="arrow-hit" data-arrow-ui x1={a.x} y1={a.y} x2={b.x} y2={b.y} onPointerDown={select} />
-              {isSelected && (
+              {isSelected && !readOnly && (
                 <>
                   <ArrowHandle arrow={arrow} which="from" at={a} />
                   <ArrowHandle arrow={arrow} which="to" at={b} />
@@ -140,7 +141,7 @@ export function ArrowLayer({ draft }: { draft: ArrowDraft | null }) {
       </svg>
       {arrows.map((arrow) => {
         const line = endpoints(arrow.content.from, arrow.content.to, rects)
-        const isSelected = selected[arrow.id]
+        const isSelected = selected[arrow.id] && !readOnly
         if (!line || (!isSelected && !arrow.content.label)) return null
         const left = (line[0].x + line[1].x) / 2
         const top = (line[0].y + line[1].y) / 2

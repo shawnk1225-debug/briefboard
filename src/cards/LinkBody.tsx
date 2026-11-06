@@ -42,8 +42,9 @@ function LinkEntry({ card }: { card: Card }) {
 export function LinkBody({ card }: { card: Card }) {
   const [playing, setPlaying] = useState(false)
   const commit = useTextCommit(card.id)
+  const readOnly = useStore((s) => s.readOnly)
   const { url, title, thumbnail, embed } = card.content
-  if (!url) return <LinkEntry card={card} />
+  if (!url) return readOnly ? <p className="link-empty">No link added yet.</p> : <LinkEntry card={card} />
   const vertical = embed?.provider === 'tiktok'
 
   return (

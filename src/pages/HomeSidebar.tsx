@@ -66,6 +66,7 @@ function FolderMenu({ folder, boards, onClose }: { folder: Folder; boards: Board
     <>
       <div className="menu-scrim" onPointerDown={onClose} />
       <div className="menu folder-menu" role="menu">
+        <button role="menuitem" onClick={() => { onClose(); useHomePrefs.setState({ shareFolderId: folder.id }) }}>Share…</button>
         <button role="menuitem" onClick={run(rename, "Couldn't rename that folder.")}>Rename</button>
         {!folder.parentId && <button role="menuitem" onClick={run(addBatch, "Couldn't create that batch.")}>Add batch</button>}
         <button role="menuitem" onClick={run(move, "Couldn't move that folder.")}>Move</button>
@@ -104,6 +105,7 @@ function FolderRow({ folder, boards, depth }: { folder: Folder; boards: Board[];
         )}
         <button className="side-name" aria-current={current ? 'true' : undefined} onClick={() => useHomePrefs.setState({ view: { kind: 'folder', id: folder.id } })}>
           <span>{folder.name}</span>
+          {folder.shareToken && <i className="shared-mark" title="Shared by secret link">Shared</i>}
           <em>{boardCount(boards, folders, { kind: 'folder', id: folder.id })}</em>
         </button>
         <div className="menu-wrap">

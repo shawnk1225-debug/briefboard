@@ -5,10 +5,11 @@ interface HomePrefs extends BoardFilters {
   view: HomeView
   layout: 'list' | 'grid'
   collapsed: Record<string, true>
+  shareFolderId: string | null
 }
 
 const KEY = 'briefboard:home'
-const DEFAULTS: HomePrefs = { view: { kind: 'all' }, layout: 'list', collapsed: {}, query: '', status: 'any', format: 'any', sort: 'edited' }
+const DEFAULTS: HomePrefs = { view: { kind: 'all' }, layout: 'list', collapsed: {}, shareFolderId: null, query: '', status: 'any', format: 'any', sort: 'edited' }
 
 function load(): HomePrefs {
   try {

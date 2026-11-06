@@ -39,7 +39,7 @@ export function useBoardShortcuts() {
       if (e.key === 'Escape') {
         if (s.editingId) setEditing(null)
         else if (s.tool !== 'select') setTool('select')
-        else if (s.commentCardId) useStore.setState({ commentCardId: null })
+        else if (s.commentsOpen) useStore.setState({ commentsOpen: false, commentCardId: null })
         else selectOnly([])
         return
       }

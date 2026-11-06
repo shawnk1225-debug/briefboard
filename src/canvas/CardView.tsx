@@ -10,7 +10,7 @@ import { SketchBody } from '../cards/SketchBody'
 import { TableBody } from '../cards/TableBody'
 import { TodoBody } from '../cards/TodoBody'
 import { navigate } from '../lib/route'
-import { useStore } from '../store/store'
+import { boardPath, openCardComments, useStore } from '../store/store'
 import { bumpLayout } from './ArrowLayer'
 import { startCardPointer, startResize } from './drag'
 import { spaceHeld } from './shortcuts'
@@ -20,6 +20,7 @@ export const CardView = memo(function CardView({ id, inColumn = false }: { id: s
   const selected = useStore((s) => Boolean(s.selected[id]))
   const dragging = useStore((s) => Boolean(s.dragIds[id]))
   const commentCount = useStore((s) => Object.values(s.comments).filter((c) => c.cardId === id && !c.resolved).length)
+  const readOnly = useStore((s) => s.readOnly)
   const ref = useRef<HTMLDivElement>(null)
 
   // Arrows need to follow when a card's height changes as its content changes.
@@ -33,7 +34,7 @@ export const CardView = memo(function CardView({ id, inColumn = false }: { id: s
   if (!card) return null
 
   const onDoubleClick = () => {
-    if (card.type === 'board' && card.content.boardId) navigate(`/b/${card.content.boardId}`)
+    if (card.type === 'board' && card.content.boardId) navigate(boardPath(card.content.boardId))
   }
 
   const style = inColumn ? undefined : { left: card.x, top: card.y, width: card.w, zIndex: card.z }
@@ -70,12 +71,12 @@ export const CardView = memo(function CardView({ id, inColumn = false }: { id: s
           data-html2image-ignore
           aria-label={`${commentCount} open comments`}
           title="Open comments"
-          onClick={() => useStore.setState({ commentCardId: id })}
+          onClick={() => openCardComments(id)}
         >
           {commentCount}
         </button>
       )}
-      {selected && !inColumn && !dragging && (
+      {selected && !inColumn && !dragging && !readOnly && (
         <div
           className="resize-handle"
           data-html2image-ignore

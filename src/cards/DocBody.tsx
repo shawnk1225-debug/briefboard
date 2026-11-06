@@ -7,6 +7,7 @@ import { useTextCommit } from './useTextCommit'
 
 function DocOverlay({ card }: { card: Card }) {
   const commit = useTextCommit(card.id)
+  const readOnly = useStore((s) => s.readOnly)
   // The overlay sits in the card's React tree, so its events would otherwise
   // reach the canvas, where a click on "empty space" closes the editor.
   const stop = (e: React.SyntheticEvent) => e.stopPropagation()
@@ -31,6 +32,7 @@ function DocOverlay({ card }: { card: Card }) {
           className="doc-title"
           placeholder="Untitled document"
           aria-label="Document title"
+          readOnly={readOnly}
           value={card.content.title ?? ''}
           {...commit}
           onChange={(e) => patchContent(card.id, { title: e.target.value }, { history: false })}
@@ -44,11 +46,12 @@ function DocOverlay({ card }: { card: Card }) {
 
 export function DocBody({ card }: { card: Card }) {
   const editing = useStore((s) => s.editingId === card.id)
+  const readOnly = useStore((s) => s.readOnly)
   const preview = docText(card.content.doc).slice(0, 180)
   return (
     <div className="doc-body">
       <h3>{card.content.title || 'Untitled document'}</h3>
-      <p className={preview ? '' : 'placeholder'}>{preview || 'Click again to open and write.'}</p>
+      <p className={preview ? '' : 'placeholder'}>{preview || (readOnly ? 'This document is empty.' : 'Click again to open and write.')}</p>
       <button
         className="doc-open"
         data-interactive

@@ -131,14 +131,15 @@ function SketchEditor({ card }: { card: Card }) {
 
 export function SketchBody({ card }: { card: Card }) {
   const editing = useStore((s) => s.editingId === card.id)
-  if (editing) return <SketchEditor card={card} />
+  const readOnly = useStore((s) => s.readOnly)
+  if (editing && !readOnly) return <SketchEditor card={card} />
   const strokes = card.content.strokes ?? []
   return (
     <div className="sketch-static">
       <svg className="sketch-canvas" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label="Sketch">
         <Strokes strokes={strokes} />
       </svg>
-      {!strokes.length && <span className="sketch-hint">Click again to draw</span>}
+      {!strokes.length && !readOnly && <span className="sketch-hint">Click again to draw</span>}
     </div>
   )
 }

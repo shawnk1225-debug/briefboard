@@ -101,6 +101,19 @@ export interface Folder {
   id: string
   parentId: string | null
   name: string
+  // The secret link's token while sharing is on; empty when it's off.
+  shareToken?: string | null
+}
+
+export interface SharedBatch {
+  name: string
+  boards: Board[]
+}
+
+export interface SharedBoard {
+  board: Board
+  cards: Card[]
+  comments: Comment[]
 }
 
 export type CardOp =
@@ -121,10 +134,15 @@ export type RemoteEvent =
 export interface Comment {
   id: string
   boardId: string
-  cardId: string
+  // Empty for a comment on the board as a whole.
+  cardId: string | null
   authorEmail: string
+  // The name typed by someone commenting through a secret link.
+  authorName: string | null
   body: string
   resolved: boolean
+  // Team only: never sent to anyone viewing through a secret link.
+  internal: boolean
   createdAt: string
 }
 

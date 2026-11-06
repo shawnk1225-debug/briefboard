@@ -411,6 +411,44 @@ select.status-done { color: var(--ink-faint); }
 .comments-panel form { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
 .comments-panel textarea { width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 7px; font: inherit; font-size: 14px; }
 
+/* Comment sidebar additions */
+.comment-card { display: block; max-width: 100%; border: 0; background: var(--canvas); border-radius: 5px; padding: 2px 7px; margin: 3px 0; font-size: 12.5px; color: var(--ink-soft); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button.comment-card:hover { color: var(--accent); }
+.comment-card.missing { display: inline-block; font-style: italic; }
+.comment-tag { display: inline-block; margin: 2px 4px 2px 0; padding: 0 6px; border-radius: 4px; background: var(--c-yellow); font-size: 11.5px; font-weight: 600; }
+.comment-tag.link { background: var(--c-blue); }
+.comments-panel li.on-target { box-shadow: -8px 0 0 var(--paper), -10px 0 0 var(--accent); }
+.comments-panel li.internal { background: #fffbea; margin: 0 -8px; padding: 6px 8px; border-radius: 6px; }
+.comment-target { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 12.5px; min-height: 22px; }
+.comment-target span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comment-target button { flex: none; border: 0; background: none; color: var(--ink-faint); font-size: 11px; padding: 2px 4px; }
+.comment-name { width: 100%; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 7px; font-size: 14px; }
+.comment-send { width: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.comment-internal input { accent-color: var(--accent); margin: 0; }
+.comments-btn { padding: 5px 10px; font-size: 13.5px; margin-right: 4px; }
+
+/* Secret links */
+.section-buttons { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.section-buttons .btn { margin-left: 0; }
+.shared-mark { flex: none; font-style: normal; font-size: 10.5px; font-weight: 600; color: #1f7a45; background: var(--c-green); border-radius: 4px; padding: 0 4px; margin-left: auto; }
+.share-dialog { width: min(520px, 100%); }
+.share-link { display: flex; gap: 8px; }
+.share-link input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 7px; font-size: 13.5px; background: var(--canvas); text-overflow: ellipsis; }
+.share-notes { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 3px; }
+.share-page { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+.share-page h1 { font-size: 26px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.share-list { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.share-list a { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); text-decoration: none; }
+.share-list a:hover { border-color: var(--accent); }
+.share-list strong { font-weight: 600; overflow-wrap: anywhere; }
+.share-list span { flex: none; font-size: 13px; color: var(--ink-soft); }
+.share-title { font-weight: 600; padding: 3px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-empty { padding: 10px 12px; font-size: 13px; color: var(--ink-faint); }
+.read-only .todo-add, .read-only .caption:placeholder-shown { display: none; }
+.read-only .viewport input::placeholder, .read-only .viewport textarea::placeholder { color: transparent; }
+.read-only .note-text { user-select: text; -webkit-user-select: text; }
+
 /* Web clipper */
 .clip-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .clip-card .btn { justify-content: center; }

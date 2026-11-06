@@ -11,9 +11,8 @@ and nobody else can see it.
 ## Connect Supabase
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, paste and run all of [`supabase/schema.sql`](supabase/schema.sql), then in a
-   new query do the same with
-   [`supabase/migrations/002_home_organization.sql`](supabase/migrations/002_home_organization.sql).
+2. In **SQL Editor**, paste and run all of [`supabase/schema.sql`](supabase/schema.sql), then in new
+   queries do the same with each file in [`supabase/migrations`](supabase/migrations), in order.
 3. In the SQL Editor, add yourself as owner, using the email you'll log in with:
 
    ```sql
@@ -58,6 +57,10 @@ It holds no login: saving happens on your site, under your normal sign-in.
 
 ## Good to know
 
+- **Secret links** let someone view a folder's boards and comment, with no account. Open a folder and
+  click **Share**. Anyone with the link gets the same access, and comment names aren't verified. Turning
+  a link off stops it right away, and turning it back on makes a new one. Comments marked **Team only**
+  never reach a link.
 - **Folders** go two levels deep: products, then batches. Deleting a folder never deletes boards;
   they move to Unfiled. Folders and labels are shared with the team, and pins are personal.
 - **File attachments** are limited to 50 MB each, Supabase's free-plan limit. Use video links for

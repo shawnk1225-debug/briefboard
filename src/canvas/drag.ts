@@ -92,6 +92,7 @@ export function startCardPointer(e: ReactPointerEvent, card: Card) {
   }
 
   const onMove = (ev: PointerEvent) => {
+    if (useStore.getState().readOnly) return
     if (!started) {
       if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) return
       begin()
@@ -110,7 +111,9 @@ export function startCardPointer(e: ReactPointerEvent, card: Card) {
     window.removeEventListener('pointerup', onUp)
     window.removeEventListener('pointercancel', onUp)
     if (!started) {
-      if (wasSelected && EDITABLE_TYPES.has(card.type) && !target.closest('a')) {
+      // Through a link, only documents open, and they open to read.
+      const opens = useStore.getState().readOnly ? card.type === 'doc' : EDITABLE_TYPES.has(card.type)
+      if (wasSelected && opens && !target.closest('a')) {
         selectOnly([card.id])
         setEditing(card.id)
       }

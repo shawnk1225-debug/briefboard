@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit } from '../types'
+import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit, SharedBatch, SharedBoard } from '../types'
 import type { Backend } from './backend'
 import { CLIENT_ID } from './clientId'
 
@@ -40,15 +40,30 @@ const rowToBoard = (r: any): Board => ({
   format: r.format ?? null,
 })
 
-const rowToFolder = (r: any): Folder => ({ id: r.id, parentId: r.parent_id, name: r.name })
+const rowToFolder = (r: any): Folder => ({ id: r.id, parentId: r.parent_id, name: r.name, shareToken: r.share_token ?? null })
+
+// Link data arrives without the team-only fields, so fill them in.
+const sharedBoard = (r: any): Board => ({
+  id: r.id,
+  parentBoardId: r.parent_board_id,
+  title: r.title,
+  isTemplate: false,
+  deletedAt: null,
+  updatedAt: r.updated_at,
+  folderId: null,
+  status: null,
+  format: r.format ?? null,
+})
 
 const rowToComment = (r: any): Comment => ({
   id: r.id,
   boardId: r.board_id,
-  cardId: r.card_id,
-  authorEmail: r.author_email,
+  cardId: r.card_id ?? null,
+  authorEmail: r.author_email ?? '',
+  authorName: r.author_name ?? null,
   body: r.body,
   resolved: r.resolved,
+  internal: r.internal ?? false,
   createdAt: r.created_at,
 })
 
@@ -77,7 +92,7 @@ const BOARD_COLUMNS: Record<string, string> = {
   format: 'format',
 }
 
-const FOLDER_COLUMNS: Record<string, string> = { id: 'id', parentId: 'parent_id', name: 'name' }
+const FOLDER_COLUMNS: Record<string, string> = { id: 'id', parentId: 'parent_id', name: 'name', shareToken: 'share_token' }
 
 // One request updates at most this many boards, to keep the request URL a safe length.
 const UPDATE_CHUNK = 100
@@ -108,6 +123,7 @@ export class SupabaseBackend implements Backend {
   readonly mode = 'supabase' as const
   private db = supabase!
   private signedUrls = new Map<string, { url: string; expires: number }>()
+  private shareClient: SupabaseClient | null = null
 
   async listBoards() {
     const rows = await fetchAllPages(async (from, to) => {
@@ -259,10 +275,47 @@ export class SupabaseBackend implements Backend {
     return path
   }
 
+  // Runs signed out, even for a teammate opening a link, so a link shows exactly what an
+  // editor would see. The header is what lets storage's rules check the link.
+  setShareToken(token: string | null) {
+    this.signedUrls.clear()
+    this.shareClient = token
+      ? createClient(url!, anonKey!, {
+          auth: { persistSession: false, autoRefreshToken: false, storageKey: 'briefboard-share' },
+          global: { headers: { 'x-briefboard-share': token } },
+        })
+      : null
+  }
+
+  async getSharedBatch(token: string): Promise<SharedBatch | null> {
+    const { data, error } = await (this.shareClient ?? this.db).rpc('share_get_batch', { p_token: token })
+    if (error) throw error
+    return data ? { name: data.name, boards: data.boards.map(sharedBoard) } : null
+  }
+
+  async getSharedBoard(token: string, boardId: string): Promise<SharedBoard | null> {
+    const { data, error } = await (this.shareClient ?? this.db).rpc('share_get_board', { p_token: token, p_board_id: boardId })
+    if (error) throw error
+    if (!data) return null
+    return { board: sharedBoard(data.board), cards: data.cards.map(rowToCard), comments: data.comments.map(rowToComment) }
+  }
+
+  async addSharedComment(token: string, boardId: string, cardId: string | null, name: string, body: string) {
+    const { data, error } = await (this.shareClient ?? this.db).rpc('share_add_comment', {
+      p_token: token,
+      p_board_id: boardId,
+      p_card_id: cardId,
+      p_name: name,
+      p_body: body,
+    })
+    if (error) throw error
+    return rowToComment(data)
+  }
+
   async resolveImage(ref: string) {
     const cached = this.signedUrls.get(ref)
     if (cached && cached.expires > Date.now()) return cached.url
-    const { data, error } = await this.db.storage.from(IMAGE_BUCKET).createSignedUrl(ref, SIGNED_URL_SECONDS)
+    const { data, error } = await (this.shareClient ?? this.db).storage.from(IMAGE_BUCKET).createSignedUrl(ref, SIGNED_URL_SECONDS)
     if (error) throw error
     this.signedUrls.set(ref, { url: data.signedUrl, expires: Date.now() + (SIGNED_URL_SECONDS - 3600) * 1000 })
     return data.signedUrl
@@ -278,7 +331,7 @@ export class SupabaseBackend implements Backend {
   }
 
   async fileUrl(ref: string, downloadName?: string) {
-    const { data, error } = await this.db.storage
+    const { data, error } = await (this.shareClient ?? this.db).storage
       .from(FILE_BUCKET)
       .createSignedUrl(ref, 60 * 60, downloadName ? { download: downloadName } : undefined)
     if (error) throw error
@@ -291,10 +344,10 @@ export class SupabaseBackend implements Backend {
     return data.map(rowToComment)
   }
 
-  async addComment(fields: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body'>) {
+  async addComment(fields: Pick<Comment, 'id' | 'boardId' | 'cardId' | 'body' | 'internal'>) {
     const { data, error } = await this.db
       .from('comments')
-      .insert({ id: fields.id, board_id: fields.boardId, card_id: fields.cardId, body: fields.body })
+      .insert({ id: fields.id, board_id: fields.boardId, card_id: fields.cardId, body: fields.body, internal: fields.internal })
       .select()
       .single()
     if (error) throw error

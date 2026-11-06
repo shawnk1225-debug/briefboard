@@ -134,7 +134,7 @@ export function Canvas() {
 
   const onDoubleClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement
-    if (target.closest('[data-card-id]') || target.closest('[data-arrow-ui]')) return
+    if (target.closest('[data-card-id]') || target.closest('[data-arrow-ui]') || useStore.getState().readOnly) return
     const p = screenToWorld(e.clientX, e.clientY)
     const card = addCard('note', p.x - 20, p.y - 20)
     setEditing(card.id)
@@ -143,7 +143,7 @@ export function Canvas() {
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
     const files = [...e.dataTransfer.files]
-    if (!files.length) return
+    if (!files.length || useStore.getState().readOnly) return
     const p = screenToWorld(e.clientX, e.clientY)
     void addFiles(files, p.x, p.y)
   }

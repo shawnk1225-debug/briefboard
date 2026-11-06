@@ -22,6 +22,7 @@ import { openSearch } from '../ui/SearchDialog'
 import { BoardGrid, BoardTable, guard } from './BoardList'
 import { HomeSidebar } from './HomeSidebar'
 import { useHomePrefs } from './homePrefs'
+import { ShareDialog } from './ShareDialog'
 import { TeamDialog } from './TeamDialog'
 
 const byNewest = (a: Board, b: Board) => b.updatedAt.localeCompare(a.updatedAt)
@@ -334,7 +335,14 @@ export function HomePage() {
                 <span className="muted" role="status">
                   {filtering ? `${shown.length} of ${inView.length}` : `${inView.length}`} {inView.length === 1 ? 'board' : 'boards'}
                 </span>
-                <NewBoardMenu folderId={folderId} templates={templates} />
+                <div className="section-buttons">
+                  {folderId && (
+                    <button className="btn" onClick={() => useHomePrefs.setState({ shareFolderId: folderId })}>
+                      {folders[folderId]?.shareToken ? 'Shared' : 'Share'}
+                    </button>
+                  )}
+                  <NewBoardMenu folderId={folderId} templates={templates} />
+                </div>
               </div>
               <BoardToolbar />
               {shown.length > 0 && prefs.layout === 'list' && (
@@ -365,6 +373,9 @@ export function HomePage() {
       </div>
 
       {showTeam && <TeamDialog onClose={() => setShowTeam(false)} />}
+      {prefs.shareFolderId && folders[prefs.shareFolderId] && (
+        <ShareDialog folder={folders[prefs.shareFolderId]} onClose={() => useHomePrefs.setState({ shareFolderId: null })} />
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { PreviewCard } from '../lib/boardPreview'
 import { furthestTutorialState, readTutorialState, writeTutorialState } from '../lib/tutorialMemory'
 import type { Board, Card, CardOp, Comment, Folder, Member, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
 import type { Backend } from './backend'
@@ -212,6 +213,30 @@ export class SupabaseBackend implements Backend {
       return data
     })
     return rows.map(rowToCard)
+  }
+
+  // Only where cards sit, not what they say, so previews stay quick on a long list.
+  async listPreviewCards(boardId: string): Promise<PreviewCard[]> {
+    const rows = await fetchAllPages(async (from, to) => {
+      const { data, error } = await this.db
+        .from('cards')
+        .select('id, type, x, y, w, column_id, color:content->>color, aspect:content->>aspect')
+        .eq('board_id', boardId)
+        .order('id')
+        .range(from, to)
+      if (error) throw error
+      return data as any[]
+    })
+    return rows.map((r) => ({
+      id: r.id,
+      type: r.type,
+      x: r.x,
+      y: r.y,
+      w: r.w,
+      columnId: r.column_id,
+      color: r.color ?? undefined,
+      aspect: r.aspect ? Number(r.aspect) : undefined,
+    }))
   }
 
   async applyOps(ops: CardOp[]) {

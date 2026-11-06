@@ -12,11 +12,13 @@ import {
   type BoardFilters,
 } from '../lib/boardsView'
 import { navigate } from '../lib/route'
-import { BUILTIN_TEMPLATES, createFromBuiltin } from '../lib/templates'
+import { previewShape, toPreviewCard } from '../lib/boardPreview'
+import { BUILTIN_TEMPLATES, buildTemplateCards, createFromBuiltin } from '../lib/templates'
 import { copyBoardTree } from '../store/copy'
 import { createBoard, deleteBoardForever, setPinned, trashBoard, updateBoard, updateBoards, useStore } from '../store/store'
 import type { Board, BoardFormat, BoardStatus } from '../types'
 import { askConfirm, askInput, showToast } from '../ui/feedback'
+import { BoardPreview, PreviewArt } from '../ui/BoardPreview'
 import { SearchIcon } from '../ui/icons'
 import { openSearch } from '../ui/SearchDialog'
 import { BoardGrid, BoardTable, guard } from './BoardList'
@@ -63,6 +65,64 @@ function NewBoardMenu({ folderId, templates }: { folderId: string | null; templa
         </>
       )}
     </div>
+  )
+}
+
+function TemplateRow({ folderId, templates }: { folderId: string | null; templates: Board[] }) {
+  const hidden = useHomePrefs((s) => s.hideTemplates)
+  const shapes = useMemo(
+    () => Object.fromEntries(BUILTIN_TEMPLATES.map((t) => [t.id, previewShape(buildTemplateCards(t, 'preview').map(toPreviewCard))])),
+    [],
+  )
+  const fail = "Couldn't create that board."
+
+  if (hidden) {
+    return (
+      <div className="template-row-closed">
+        <button className="link-btn" onClick={() => useHomePrefs.setState({ hideTemplates: false })}>Show templates</button>
+      </div>
+    )
+  }
+
+  return (
+    <section className="template-row" aria-label="Start a new board">
+      <div className="template-row-head">
+        <h2>Start a new board</h2>
+        <button className="link-btn" onClick={() => useHomePrefs.setState({ hideTemplates: true })}>Hide</button>
+      </div>
+      <div className="template-row-items">
+        <button
+          className="template-tile"
+          onClick={guard(async () => navigate(`/b/${(await createBoard({ folderId })).id}`), fail)}
+        >
+          <span className="template-blank" aria-hidden="true">+</span>
+          <strong>Blank board</strong>
+        </button>
+        {BUILTIN_TEMPLATES.map((template) => (
+          <button
+            key={template.id}
+            className="template-tile"
+            onClick={guard(async () => navigate(`/b/${(await createFromBuiltin(template, { folderId })).id}`), fail)}
+          >
+            <PreviewArt shape={shapes[template.id]} />
+            <strong>{template.title}</strong>
+          </button>
+        ))}
+        {templates.map((template) => (
+          <button
+            key={template.id}
+            className="template-tile"
+            onClick={guard(async () => {
+              const board = await copyBoardTree(template.id, { parentBoardId: null, isTemplate: false, folderId })
+              if (board) navigate(`/b/${board.id}`)
+            }, fail)}
+          >
+            <BoardPreview boardId={template.id} updatedAt={template.updatedAt} />
+            <strong>{template.title}</strong>
+          </button>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -328,6 +388,7 @@ export function HomePage() {
           <Pinned boards={pinned} />
           {view.kind === 'templates' && <TemplatesView templates={templates} />}
           {view.kind === 'trash' && <TrashView trash={trash} />}
+          {isBoardsView && <TemplateRow folderId={folderId} templates={templates} />}
           {isBoardsView && (
             <section>
               <div className="section-head">

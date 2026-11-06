@@ -1,4 +1,5 @@
 import { createStore, del, get, set, update } from 'idb-keyval'
+import { toPreviewCard } from '../lib/boardPreview'
 import { readTutorialState, writeTutorialState } from '../lib/tutorialMemory'
 import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
 import type { Backend } from './backend'
@@ -155,6 +156,10 @@ export class LocalBackend implements Backend {
   async listCards(boardId: string) {
     const cards = (await get<Cards>('cards', this.store)) ?? {}
     return Object.values(cards).filter((c) => c.boardId === boardId)
+  }
+
+  async listPreviewCards(boardId: string) {
+    return (await this.listCards(boardId)).map(toPreviewCard)
   }
 
   async applyOps(ops: CardOp[]) {

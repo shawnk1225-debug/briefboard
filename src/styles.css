@@ -514,6 +514,26 @@ label.comment-internal { flex: 1; flex-direction: row; align-items: center; gap:
 .board-page.full .toolbar { top: 66px; max-height: calc(100% - 78px); }
 .board-page.full .comments-panel { top: 66px; right: 12px; bottom: 12px; border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-2); overflow: hidden; z-index: 26; }
 
+/* Board previews */
+.board-preview-wrap { display: block; }
+.board-preview { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 10; margin-bottom: 10px; padding: 6px; background: var(--canvas); border-radius: 10px; overflow: hidden; }
+.board-preview svg { width: 100%; height: 100%; display: block; }
+.board-preview.empty span { font-size: 12.5px; color: var(--ink-faint); }
+
+/* Templates on the home page */
+.template-row { background: var(--canvas); border-radius: 16px; padding: 13px 16px 16px; }
+.template-row-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.template-row-head h2 { font-size: 14.5px; font-weight: 650; }
+.template-row-head .link-btn { font-size: 13px; }
+.template-row-closed { text-align: right; }
+.template-row-closed .link-btn { font-size: 13px; }
+.template-row-items { display: flex; gap: 12px; overflow-x: auto; padding: 2px; }
+.template-tile { flex: none; width: 170px; display: flex; flex-direction: column; padding: 8px 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); text-align: left; transition: box-shadow 0.12s, border-color 0.12s, transform 0.12s; }
+.template-tile:hover { border-color: var(--accent); box-shadow: var(--shadow-1); transform: translateY(-1px); }
+.template-tile strong { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
+.template-tile .board-preview { margin-bottom: 8px; }
+.template-blank { display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 10; margin-bottom: 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 30px; font-weight: 300; line-height: 1; }
+
 /* Web clipper */
 .clip-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 14px; text-align: left; }
 .clip-card .btn { justify-content: center; }

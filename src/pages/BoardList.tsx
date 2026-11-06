@@ -2,6 +2,7 @@ import { folderOptions, folderPath, FORMAT_LABELS, STATUS_LABELS } from '../lib/
 import { copyBoardTree } from '../store/copy'
 import { setPinned, trashBoard, updateBoards, useStore } from '../store/store'
 import type { Board, BoardFormat, BoardStatus } from '../types'
+import { BoardPreview } from '../ui/BoardPreview'
 import { showToast } from '../ui/feedback'
 
 export const guard = (action: () => Promise<unknown>, failure: string) => () => {
@@ -164,9 +165,7 @@ export function BoardGrid({ boards, checked, onCheck }: Omit<ListProps, 'onCheck
             <PinButton board={board} />
           </div>
           <a className="tile-open" href={`#/b/${board.id}`}>
-            <span className="tile-art" aria-hidden="true">
-              <i /><i /><i />
-            </span>
+            <BoardPreview boardId={board.id} updatedAt={board.updatedAt} />
             <h3>{board.title}</h3>
             <time dateTime={board.updatedAt}>Edited {editedLabel(board.updatedAt)}</time>
           </a>

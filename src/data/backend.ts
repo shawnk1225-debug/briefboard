@@ -1,4 +1,5 @@
 import type { Board, Card, CardOp, Comment, Folder, RemoteEvent, SearchHit, SharedBatch, SharedBoard, TutorialState } from '../types'
+import type { PreviewCard } from '../lib/boardPreview'
 import { LocalBackend } from './localBackend'
 import { SupabaseBackend, supabaseConfigured } from './supabaseBackend'
 
@@ -17,6 +18,7 @@ export interface Backend {
   unpinBoard(boardId: string): Promise<void>
   deleteBoardForever(id: string): Promise<void>
   listCards(boardId: string): Promise<Card[]>
+  listPreviewCards(boardId: string): Promise<PreviewCard[]>
   applyOps(ops: CardOp[]): Promise<void>
   subscribe(handler: (event: RemoteEvent) => void): () => void
   uploadImage(blob: Blob, extension: string): Promise<string>
